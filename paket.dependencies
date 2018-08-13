@@ -2,6 +2,8 @@ source https://api.nuget.org/v3/index.json
 
 nuget FSharp.Core
 nuget TaskBuilder.fs
+nuget Newtonsoft.Json
+nuget Microsoft.Azure.DocumentDB.Core
 
 group Build
     source https://api.nuget.org/v3/index.json
