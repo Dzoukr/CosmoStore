@@ -5,6 +5,10 @@ nuget TaskBuilder.fs
 nuget Newtonsoft.Json
 nuget Microsoft.Azure.DocumentDB.Core
 
+nuget NUnit
+nuget NUnit3TestAdapter
+nuget Microsoft.NET.Test.Sdk
+
 group Build
     source https://api.nuget.org/v3/index.json
     nuget Fake.DotNet.Cli
