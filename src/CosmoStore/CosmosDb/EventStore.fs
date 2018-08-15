@@ -1,4 +1,4 @@
-module CosmoStore.CosmosDb
+module CosmoStore.CosmosDb.EventStore
 
 open System
 open System.Threading.Tasks
@@ -6,6 +6,7 @@ open Newtonsoft.Json.Linq
 open Microsoft.Azure.Documents
 open Microsoft.Azure.Documents.Client
 open FSharp.Control.Tasks.V2
+open CosmoStore
 
 let private collectionName = "Events"
 let private partitionKey = "streamId"
@@ -83,11 +84,11 @@ let private createCollection dbName (capacity:Capacity) (throughput:int) (client
 let private createStoreProcedures dbName (client:DocumentClient) =
     let collUri = UriFactory.CreateDocumentCollectionUri(dbName, collectionName)
     task {
-        let! _ = client.CreateStoredProcedureAsync(collUri, StoredProcedure(Id = "AppendEvent", Body = "TODO"))
+        let! _ = client.CreateStoredProcedureAsync(collUri, StoredProcedure(Id = "AppendEvent", Body = CosmoStore.CosmosDb.StoredProcedures.appendEvent))
         return ()
     }
 
-let createEventStore (configuration:Configuration) = 
+let getEventStore (configuration:Configuration) = 
     let client = new DocumentClient(configuration.ServiceEndpoint, configuration.AuthKey)
     task {
         do! createDatabase configuration.DatabaseName client
