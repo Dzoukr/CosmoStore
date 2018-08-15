@@ -7,6 +7,7 @@ open Microsoft.Azure.Documents
 open Microsoft.Azure.Documents.Client
 open FSharp.Control.Tasks.V2
 open CosmoStore
+open Microsoft.Azure.Documents.Client
 
 let private collectionName = "Events"
 let private partitionKey = "streamId"
@@ -84,7 +85,7 @@ let private createCollection dbName (capacity:Capacity) (throughput:int) (client
 let private createStoreProcedures dbName (client:DocumentClient) =
     let collUri = UriFactory.CreateDocumentCollectionUri(dbName, collectionName)
     task {
-        let! _ = client.CreateStoredProcedureAsync(collUri, StoredProcedure(Id = "AppendEvent", Body = CosmoStore.CosmosDb.StoredProcedures.appendEvent))
+        let! _ = client.UpsertStoredProcedureAsync(collUri, StoredProcedure(Id = "AppendEvent", Body = CosmoStore.CosmosDb.StoredProcedures.appendEvent))
         return ()
     }
 
