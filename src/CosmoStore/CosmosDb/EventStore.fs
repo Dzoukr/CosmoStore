@@ -1,13 +1,11 @@
 module CosmoStore.CosmosDb.EventStore
 
 open System
-open System.Threading.Tasks
 open Newtonsoft.Json.Linq
 open Microsoft.Azure.Documents
 open Microsoft.Azure.Documents.Client
 open FSharp.Control.Tasks.V2
 open CosmoStore
-open Microsoft.Azure.Documents.Client
 
 let private collectionName = "Events"
 let private partitionKey = "streamId"
@@ -56,8 +54,7 @@ let private createStoreProcedures dbName (client:DocumentClient) =
 
 /// Append events to stream
 let private appendEvents getOpts (client:DocumentClient) (storedProcUri:Uri) (streamId:string) (expectedPosition:ExpectedPosition) (events:EventWrite list) = 
-    let toPositionAndDate (doc:Document) =
-        doc.GetPropertyValue<int64>("position"), doc.GetPropertyValue<DateTime>("created")
+    let toPositionAndDate (doc:Document) = doc.GetPropertyValue<int64>("position"), doc.GetPropertyValue<DateTime>("created")
     task {
         let jEvents = events |> List.map Serialization.objectToJToken
         let jPosition = expectedPosition |> Serialization.expectedPositionToJObject

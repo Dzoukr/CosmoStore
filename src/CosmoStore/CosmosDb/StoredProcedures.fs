@@ -8,6 +8,14 @@ function storedProcedure(streamId, documentsToCreate, expectedPosition) {
     var response = context.getResponse();
     var metadataId = '$_'+streamId;
 
+    function checkError(err) {
+        if (err) throw new Error("Error : " + err.message);
+    }
+    
+    function checkErrorFn(err,__) {
+        checkError(err);
+    }
+    
     function checkPosition(nextPosition) {
         if (expectedPosition.mode == "any") {
             return;
@@ -25,7 +33,6 @@ function storedProcedure(streamId, documentsToCreate, expectedPosition) {
         if (err) throw new Error("Error" + err.message);
         checkPosition(metadata.position + 1);
         var nextPosition = metadata.position;
-
         var resp = [];                
         for(var i in documentsToCreate) {
             nextPosition++;
@@ -43,28 +50,31 @@ function storedProcedure(streamId, documentsToCreate, expectedPosition) {
             }
             
             resp.push({ position: nextPosition, created : created });
-            collection.createDocument(collection.getSelfLink(), doc, function(err, __){
-                if (err) throw new Error("Error" + err.message);
-                metadata.position = nextPosition;
-                metadata.lastUpdated = created;
-                collection.replaceDocument(metadata._self, metadata, function(err,__){
-                    if (err) throw new Error("Error" + err.message);
-                    response.setBody(resp);
-                });
-            });
-            
+            var acceptedDoc = collection.createDocument(collection.getSelfLink(), doc, checkErrorFn);
+            if (!acceptedDoc) {
+                throw "Failed to append event on position " + nextPosition + " - Rollback";
+            }
         }
+
+        
+        metadata.position = nextPosition;
+        metadata.lastUpdated = created;
+        var acceptedMeta = collection.replaceDocument(metadata._self, metadata, checkErrorFn);
+        if (!acceptedMeta) {
+            throw "Failed to update metadata for stream - Rollback";
+        }
+        response.setBody(resp);
     }
     
     // main function
     function run(err,metadataResults) {
+        checkError(err);
         if (metadataResults.length == 0) {
             let newMeta = {
                 streamId:metadataId,
                 position:0
             }
-            return collection.createDocument(collection.getSelfLink(), newMeta, createDocument)
-
+            return collection.createDocument(collection.getSelfLink(), newMeta, createDocument);
         } else {
             return createDocument(err, metadataResults[0]);
         }

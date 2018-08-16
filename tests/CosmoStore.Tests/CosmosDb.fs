@@ -49,7 +49,7 @@ let ``Appends events`` () =
 
     [1..1000]
     |> List.map getEvent
-    |> store.AppendEvents "TestMultipleStream" ExpectedPosition.Any
+    |> store.AppendEvents "TestMultipleStreamBig" ExpectedPosition.Any
     |> Async.AwaitTask
     |> Async.RunSynchronously
     |> (fun er -> 
