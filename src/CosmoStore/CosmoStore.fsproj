@@ -5,7 +5,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CosmoStore.fs" />
+    <Compile Include="CosmosDb\CosmosDb.fs" />
     <Compile Include="CosmosDb\StoredProcedures.fs" />
+    <Compile Include="CosmosDb\Serialization.fs" />
+    <Compile Include="CosmosDb\Conversion.fs" />
     <Compile Include="CosmosDb\EventStore.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />

@@ -11,43 +11,8 @@ open Microsoft.Azure.Documents.Client
 
 let private collectionName = "Events"
 let private partitionKey = "streamId"
+let private appendEventProcName = "AppendEvent" 
 
-type Capacity =
-    | Fixed
-    | Unlimited
-    with
-        member x.ThroughputLimits =
-            match x with
-            | Fixed -> 400, 10000
-            | Unlimited -> 1000, 100000
-        
-        member x.CorrectThroughput (i:int) =
-            let throughput = Math.Round((decimal i) / 100m, 0) * 100m |> int
-            let min,max = x.ThroughputLimits
-            if throughput > max then max
-            else if throughput < min then min
-            else throughput
-        
-        member x.UsePartitionKey =
-            match x with
-            | Fixed -> false
-            | Unlimited -> true
-
-type Configuration = {
-    DatabaseName : string
-    ServiceEndpoint : Uri
-    AuthKey : string
-    Capacity: Capacity
-    Throughput: int
-}
-with
-    static member CreateDefault serviceEndpoint authKey = {
-        DatabaseName = "EventStore"
-        ServiceEndpoint = serviceEndpoint
-        AuthKey = authKey
-        Capacity = Fixed
-        Throughput = Fixed.ThroughputLimits |> fst
-    }
 
 let private createDatabase dbName (client:DocumentClient) =
     task {
@@ -85,12 +50,41 @@ let private createCollection dbName (capacity:Capacity) (throughput:int) (client
 let private createStoreProcedures dbName (client:DocumentClient) =
     let collUri = UriFactory.CreateDocumentCollectionUri(dbName, collectionName)
     task {
-        let! _ = client.UpsertStoredProcedureAsync(collUri, StoredProcedure(Id = "AppendEvent", Body = CosmoStore.CosmosDb.StoredProcedures.appendEvent))
+        let! _ = client.UpsertStoredProcedureAsync(collUri, StoredProcedure(Id = appendEventProcName, Body = CosmoStore.CosmosDb.StoredProcedures.appendEvent))
         return ()
     }
 
+/// Append events to stream
+let private appendEvents getOpts (client:DocumentClient) (storedProcUri:Uri) (streamId:string) (expectedPosition:ExpectedPosition) (events:EventWrite list) = 
+    let toPositionAndDate (doc:Document) =
+        doc.GetPropertyValue<int64>("position"), doc.GetPropertyValue<DateTime>("created")
+    task {
+        let jEvents = events |> List.map Serialization.objectToJToken
+        let jPosition = expectedPosition |> Serialization.expectedPositionToJObject
+        let opts = streamId |> getOpts
+        let pars = [|streamId :> obj; jEvents :> obj; jPosition :> obj|]
+        let! resp = client.ExecuteStoredProcedureAsync<List<Document>>(storedProcUri, opts, pars)
+        return resp.Response 
+        |> List.map toPositionAndDate 
+        |> List.zip events
+        |> List.map (fun (evn,(pos,created)) -> Conversion.eventWriteToEventRead streamId pos created evn)
+    }
+
+/// Append event to stream
+let private appendEvent getOpts (client:DocumentClient) (storedProcUri:Uri) (streamId:string) (expectedPosition:ExpectedPosition) (event:EventWrite) = 
+    task {
+        let! events = event |> List.singleton |> appendEvents getOpts client storedProcUri streamId expectedPosition
+        return events.Head
+    }
+    
+let private getRequestOptions usePartitionKey streamId =
+    if usePartitionKey then RequestOptions(PartitionKey = PartitionKey(streamId))
+    else RequestOptions()    
+
 let getEventStore (configuration:Configuration) = 
     let client = new DocumentClient(configuration.ServiceEndpoint, configuration.AuthKey)
+    let appendEventProcUri = UriFactory.CreateStoredProcedureUri(configuration.DatabaseName, collectionName, appendEventProcName)
+
     task {
         do! createDatabase configuration.DatabaseName client
         do! createCollection configuration.DatabaseName configuration.Capacity configuration.Throughput client
@@ -108,9 +102,10 @@ let getEventStore (configuration:Configuration) =
         CreatedUtc = DateTime.UtcNow
     }
     
+    let getOpts = getRequestOptions configuration.Capacity.UsePartitionKey
     {
-        AppendEvent = fun _ _ _ -> task { return dummy }//: string -> ExpectedPosition -> EventWrite -> Task<EventRead>
-        AppendEvents = fun _ _ _ -> task { return [dummy] } // string -> ExpectedPosition -> EventWrite list -> Task<EventRead list>
+        AppendEvent = appendEvent getOpts client appendEventProcUri
+        AppendEvents = appendEvents getOpts client appendEventProcUri
         GetEvent = fun _ _ -> task { return dummy }//: string -> int64 -> Task<EventRead>
         GetEvents = fun _ _ -> task { return [dummy]}// string -> EventsReadRange -> Task<EventRead list>
         GetStreams = fun _ -> task { return ["dummy"]}// StreamsReadFilter -> Task<string list>

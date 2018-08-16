@@ -38,7 +38,6 @@ type EventWrite = {
     Name : string
     Data : JToken
     Metadata : JToken option
-    CreatedUtc : DateTime
 }
 
 type EventStore = {

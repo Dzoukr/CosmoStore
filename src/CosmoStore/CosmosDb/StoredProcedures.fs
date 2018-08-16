@@ -1,7 +1,7 @@
 module CosmoStore.CosmosDb.StoredProcedures
 
 let appendEvent = """
-function storedProcedure(streamId, documentToCreate, expectedPosition) {
+function storedProcedure(streamId, documentsToCreate, expectedPosition) {
     
     var context = getContext();
     var collection = context.getCollection();
@@ -19,55 +19,60 @@ function storedProcedure(streamId, documentToCreate, expectedPosition) {
             throw "ESERROR_POSITION_POSITIONNOTMATCH";
         }
     }
-
-    function postSaveActions(err, metadata) {
+    
+    // append event
+    function createDocument(err, metadata) {
         if (err) throw new Error("Error" + err.message);
-        response.setBody(metadata.position);
+        checkPosition(metadata.position + 1);
+        var nextPosition = metadata.position;
+
+        var resp = [];                
+        for(var i in documentsToCreate) {
+            nextPosition++;
+            var d = documentsToCreate[i];
+            var created = new Date().toISOString();
+            var doc = {
+                "id" : d.id,
+                "correlationId" : d.correlationId,
+                "streamId" : streamId,
+                "position" : nextPosition,
+                "name" : d.name,
+                "data" : d.data,
+                "metadata" : d.metadata,
+                "createdUtc" : created
+            }
+            
+            resp.push({ position: nextPosition, created : created });
+            collection.createDocument(collection.getSelfLink(), doc, function(err, __){
+                if (err) throw new Error("Error" + err.message);
+                metadata.position = nextPosition;
+                metadata.lastUpdated = created;
+                collection.replaceDocument(metadata._self, metadata, function(err,__){
+                    if (err) throw new Error("Error" + err.message);
+                    response.setBody(resp);
+                });
+            });
+            
+        }
     }
     
-    function getMetadata(metadataResults) {
+    // main function
+    function run(err,metadataResults) {
         if (metadataResults.length == 0) {
-            return {
+            let newMeta = {
                 streamId:metadataId,
                 position:0
             }
+            return collection.createDocument(collection.getSelfLink(), newMeta, createDocument)
+
         } else {
-            return metadataResults[0];
+            return createDocument(err, metadataResults[0]);
         }
     }
 
-    // append event
-    function createDocument(err, metadataResults) {
-        if (err) throw new Error("Error" + err.message);
-        var metadata = getMetadata(metadataResults);
-        var nextPosition = metadata.position + 1;
-        checkPosition(nextPosition);
-        
-        var doc = {
-            "id" : documentToCreate.id,
-            "correlationId" : documentToCreate.correlationId,
-            "streamId" : streamId,
-            "position" : nextPosition,
-            "name" : documentToCreate.name,
-            "data" : documentToCreate.data,
-            "metadata" : documentToCreate.metadata,
-            "createdUtc" : documentToCreate.createdUtc
-        }
-        
-        collection.createDocument(collection.getSelfLink(), doc, function(err, createdDoc){
-            if (err) throw new Error("Error" + err.message);
-            metadata.position = nextPosition;
-            if (metadata._self) {
-                collection.replaceDocument(metadata._self, metadata, postSaveActions);
-            } else {
-                collection.createDocument(collection.getSelfLink(), metadata, postSaveActions);
-            }
-        });
-    }
-    
     // metadata query
     var metadataQuery = 'SELECT * FROM Events e WHERE e.streamId = "'+ metadataId + '"';
-    var transactionAccepted = collection.queryDocuments(collection.getSelfLink(), metadataQuery, createDocument);
+    var transactionAccepted = collection.queryDocuments(collection.getSelfLink(), metadataQuery, run);
     if (!transactionAccepted) throw "Transaction not accepted, rollback";
 }
 """
