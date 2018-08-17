@@ -20,6 +20,10 @@ let getEvent i =
         Metadata = JValue("TEST STRING META") :> JToken |> Some
     }
 
+let checkPosition acc (item:EventRead) =
+        Assert.IsTrue(item.Position > acc)
+        item.Position
+
 [<SetUp>]
 let ``Setup CosmoStore``() =
     let client = new DocumentClient(conf.ServiceEndpoint, conf.AuthKey)
@@ -41,6 +45,82 @@ let ``Appends event`` () =
     |> (fun er -> 
         Assert.AreEqual(1, er.Position)
     )
+
+[<Test>]
+let ``Get events (all)`` () =
+    let store = conf |> EventStore.getEventStore
+    
+    [1..10]
+    |> List.map getEvent
+    |> store.AppendEvents "TestStream" ExpectedPosition.Any
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
+    |> ignore
+
+    let events =
+        store.GetEvents "TestStream" EventsReadRange.AllEvents
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+    
+    Assert.AreEqual(10, events.Length)
+    events |> List.fold checkPosition 0L |> ignore
+
+[<Test>]
+let ``Get events (from position)`` () =
+    let store = conf |> EventStore.getEventStore
+    
+    [1..10]
+    |> List.map getEvent
+    |> store.AppendEvents "TestStream" ExpectedPosition.Any
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
+    |> ignore
+
+    let events =
+        store.GetEvents "TestStream" (EventsReadRange.FromPosition(6L))
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+    
+    Assert.AreEqual(5, events.Length)
+    events |> List.fold checkPosition 5L |> ignore
+    
+[<Test>]
+let ``Get events (to position)`` () =
+    let store = conf |> EventStore.getEventStore
+    
+    [1..10]
+    |> List.map getEvent
+    |> store.AppendEvents "TestStream" ExpectedPosition.Any
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
+    |> ignore
+
+    let events =
+        store.GetEvents "TestStream" (EventsReadRange.ToPosition(5L))
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+    
+    Assert.AreEqual(5, events.Length)
+    events |> List.fold checkPosition 0L |> ignore
+
+[<Test>]
+let ``Get events (position range)`` () =
+    let store = conf |> EventStore.getEventStore
+    
+    [1..10]
+    |> List.map getEvent
+    |> store.AppendEvents "TestStream" ExpectedPosition.Any
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
+    |> ignore
+
+    let events =
+        store.GetEvents "TestStream" (EventsReadRange.PositionRange(5L,7L))
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+    
+    Assert.AreEqual(3, events.Length)
+    events |> List.fold checkPosition 4L |> ignore
 
 [<Test>]
 let ``Get streams (all)`` () =
@@ -69,6 +149,32 @@ let ``Get streams (startswith)`` () =
     [1..3] |> List.iter addEventToStream
     let streams = store.GetStreams (StreamsReadFilter.StarsWith("2")) |> Async.AwaitTask |> Async.RunSynchronously
     Assert.AreEqual("2TestStream", streams.Head.Id)
+
+[<Test>]
+let ``Get streams (endswith)`` () =
+    let store = conf |> EventStore.getEventStore
+    let addEventToStream i =
+        getEvent 1
+        |> store.AppendEvent (sprintf "TestStream%i" i) ExpectedPosition.Any
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+        |> ignore
+    [1..3] |> List.iter addEventToStream
+    let streams = store.GetStreams (StreamsReadFilter.EndsWith("2")) |> Async.AwaitTask |> Async.RunSynchronously
+    Assert.AreEqual("TestStream2", streams.Head.Id)
+
+[<Test>]
+let ``Get streams (contains)`` () =
+    let store = conf |> EventStore.getEventStore
+    let addEventToStream i =
+        getEvent 1
+        |> store.AppendEvent (sprintf "Test%iStream" i) ExpectedPosition.Any
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
+        |> ignore
+    [1..3] |> List.iter addEventToStream
+    let streams = store.GetStreams (StreamsReadFilter.Contains("2")) |> Async.AwaitTask |> Async.RunSynchronously
+    Assert.AreEqual("Test2Stream", streams.Head.Id)
 
 [<Test>]
 let ``Fails to append to existing position`` () =
@@ -116,9 +222,7 @@ let ``Appends events`` () =
     let checkCreation acc item =
         Assert.IsTrue(item.CreatedUtc >= acc)
         item.CreatedUtc
-    let checkPosition acc (item:EventRead) =
-        Assert.IsTrue(item.Position > acc)
-        item.Position
+    
 
     [1..1000]
     |> List.map getEvent

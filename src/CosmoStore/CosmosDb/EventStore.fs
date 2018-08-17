@@ -99,6 +99,29 @@ let private getStreams (client:DocumentClient) (collectionUri:Uri) (streamsRead:
         |> List.map Conversion.documentToStream
     }
 
+let private streamEventsReadToQuery = function
+    | AllEvents -> ""
+    | FromPosition pos -> sprintf "AND e.position >= %i" pos
+    | ToPosition pos -> sprintf "AND e.position <= %i" pos
+    | PositionRange(st,en) -> sprintf "AND e.position >= %i AND e.position <= %i" st en
+
+let private getEvents (client:DocumentClient) (collectionUri:Uri) streamId (eventsRead:EventsReadRange) =
+    task {
+        return createQuery 
+            (sprintf "SELECT * FROM %s e WHERE e.streamId = @streamId %s ORDER BY e.position ASC" collectionName (streamEventsReadToQuery eventsRead))
+            ["@streamId", streamId :> obj]
+        |> runQuery<Document> client collectionUri
+        |> Seq.toList
+        |> List.map Conversion.documentToEventRead
+    }
+
+let private getEvent (client:DocumentClient) (collectionUri:Uri) streamId position =
+    task {
+        let filter = EventsReadRange.PositionRange(position, position)
+        let! events = getEvents client collectionUri streamId filter
+        return events.Head
+    }
+
 let private getRequestOptions usePartitionKey streamId =
     if usePartitionKey then RequestOptions(PartitionKey = PartitionKey(streamId))
     else RequestOptions()    
@@ -129,7 +152,7 @@ let getEventStore (configuration:Configuration) =
     {
         AppendEvent = appendEvent getOpts client appendEventProcUri
         AppendEvents = appendEvents getOpts client appendEventProcUri
-        GetEvent = fun _ _ -> task { return dummy }//: string -> int64 -> Task<EventRead>
-        GetEvents = fun _ _ -> task { return [dummy]}// string -> EventsReadRange -> Task<EventRead list>
+        GetEvent = getEvent client eventsCollectionUri
+        GetEvents = getEvents client eventsCollectionUri
         GetStreams = getStreams client eventsCollectionUri
     }

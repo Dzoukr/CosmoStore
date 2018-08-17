@@ -3,6 +3,7 @@ module CosmoStore.CosmosDb.Conversion
 open System
 open CosmoStore
 open Microsoft.Azure.Documents
+open Newtonsoft.Json.Linq
 
 let eventWriteToEventRead streamId position createdUtc (x:EventWrite) = {
     Id = x.Id
@@ -20,3 +21,15 @@ let documentToStream (x:Document) = {
     LastUpdatedUtc = x.GetPropertyValue<DateTime>("lastUpdatedUtc")
     Position = x.GetPropertyValue<int64>("position")
 }
+
+let documentToEventRead (doc:Document) = 
+    { 
+        Id = Guid(doc.Id)
+        CorrelationId = doc.GetPropertyValue<Guid>("correlationId")
+        StreamId = doc.GetPropertyValue<string>("streamId")
+        Position = doc.GetPropertyValue<int64>("position")
+        Name = doc.GetPropertyValue<string>("name")
+        Data = doc.GetPropertyValue<JToken>("data")
+        Metadata = doc.GetPropertyValue<JToken>("metadata") |> function | null -> None | x -> Some x
+        CreatedUtc = doc.GetPropertyValue<DateTime>("createdUtc")
+    }
