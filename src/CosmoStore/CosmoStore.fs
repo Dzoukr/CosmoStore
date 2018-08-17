@@ -40,10 +40,16 @@ type EventWrite = {
     Metadata : JToken option
 }
 
+type Stream = {
+    Id : string
+    Position : int64
+    LastUpdatedUtc: DateTime
+}
+
 type EventStore = {
     AppendEvent : string -> ExpectedPosition -> EventWrite -> Task<EventRead>
     AppendEvents : string -> ExpectedPosition -> EventWrite list -> Task<EventRead list>
     GetEvent : string -> int64 -> Task<EventRead>
     GetEvents : string -> EventsReadRange -> Task<EventRead list>
-    GetStreams : StreamsReadFilter -> Task<string list>
+    GetStreams : StreamsReadFilter -> Task<Stream list>
 }

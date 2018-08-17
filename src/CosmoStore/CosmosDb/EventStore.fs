@@ -9,8 +9,7 @@ open CosmoStore
 
 let private collectionName = "Events"
 let private partitionKey = "streamId"
-let private appendEventProcName = "AppendEvent" 
-
+let private appendEventProcName = "AppendEvents" 
 
 let private createDatabase dbName (client:DocumentClient) =
     task {
@@ -73,13 +72,40 @@ let private appendEvent getOpts (client:DocumentClient) (storedProcUri:Uri) (str
         let! events = event |> List.singleton |> appendEvents getOpts client storedProcUri streamId expectedPosition
         return events.Head
     }
-    
+
+let private streamsReadToQuery = function
+    | AllStreams -> "WHERE e.refStreamId <> ''", ("@_", null)
+    | StarsWith w -> "WHERE STARTSWITH(e.refStreamId, @streamId)", ("@streamId", w :> obj)
+    | EndsWith w -> "WHERE ENDSWITH(e.refStreamId, @streamId)", ("@streamId", w :> obj)
+    | Contains t -> "WHERE CONTAINS(e.refStreamId, @streamId)", ("@streamId", t :> obj)
+
+let private createQuery q (pars:(string * obj) list) =
+    let ps = pars |> List.map (fun (x,y) -> SqlParameter(x, y)) |> SqlParameterCollection
+    SqlQuerySpec(q, ps)
+
+let private runQuery<'a> (client:DocumentClient) (collectionUri:Uri) (q:SqlQuerySpec) =
+    let opts = new FeedOptions()
+    opts.EnableCrossPartitionQuery <- true
+    opts.EnableScanInQuery <- Nullable<bool>(true)
+    client.CreateDocumentQuery<'a>(collectionUri, q, opts) 
+
+let private getStreams (client:DocumentClient) (collectionUri:Uri) (streamsRead:StreamsReadFilter) =
+    task {
+        let queryAdd,param = streamsRead |> streamsReadToQuery
+        return createQuery 
+                (sprintf "SELECT * FROM %s e %s" collectionName queryAdd) [param]
+        |> runQuery<Document> client collectionUri
+        |> Seq.toList
+        |> List.map Conversion.documentToStream
+    }
+
 let private getRequestOptions usePartitionKey streamId =
     if usePartitionKey then RequestOptions(PartitionKey = PartitionKey(streamId))
     else RequestOptions()    
 
 let getEventStore (configuration:Configuration) = 
     let client = new DocumentClient(configuration.ServiceEndpoint, configuration.AuthKey)
+    let eventsCollectionUri = UriFactory.CreateDocumentCollectionUri(configuration.DatabaseName, collectionName)
     let appendEventProcUri = UriFactory.CreateStoredProcedureUri(configuration.DatabaseName, collectionName, appendEventProcName)
 
     task {
@@ -105,5 +131,5 @@ let getEventStore (configuration:Configuration) =
         AppendEvents = appendEvents getOpts client appendEventProcUri
         GetEvent = fun _ _ -> task { return dummy }//: string -> int64 -> Task<EventRead>
         GetEvents = fun _ _ -> task { return [dummy]}// string -> EventsReadRange -> Task<EventRead list>
-        GetStreams = fun _ -> task { return ["dummy"]}// StreamsReadFilter -> Task<string list>
+        GetStreams = getStreams client eventsCollectionUri
     }

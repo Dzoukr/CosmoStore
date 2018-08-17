@@ -52,7 +52,7 @@ function storedProcedure(streamId, documentsToCreate, expectedPosition) {
             resp.push({ position: nextPosition, created : created });
             var acceptedDoc = collection.createDocument(collection.getSelfLink(), doc, checkErrorFn);
             if (!acceptedDoc) {
-                throw "Failed to append event on position " + nextPosition + " - Rollback";
+                throw "Failed to append event on position " + nextPosition + " - Rollback. Please try to increase RU for collection Events.";
             }
         }
 
@@ -71,6 +71,7 @@ function storedProcedure(streamId, documentsToCreate, expectedPosition) {
         checkError(err);
         if (metadataResults.length == 0) {
             let newMeta = {
+                refStreamId:streamId,
                 streamId:metadataId,
                 position:0
             }
