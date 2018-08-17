@@ -11,6 +11,10 @@ let conf = CosmoStore.CosmosDb.Configuration.CreateDefault
             (Uri "https://localhost:8081") 
             "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
 
+let getStore throughput =
+    let c = if throughput > 10000 then { conf with Capacity = Unlimited; Throughput = throughput } else { conf with Throughput = throughput }
+    c |> EventStore.getEventStore
+
 let getEvent i =
     {
         Id = Guid.NewGuid()
@@ -19,6 +23,14 @@ let getEvent i =
         Data = JValue("TEST STRING")
         Metadata = JValue("TEST STRING META") :> JToken |> Some
     }
+
+let streamId = "TestStream"
+
+let appendEvents store =
+    List.map getEvent
+    >> store.AppendEvents streamId ExpectedPosition.Any
+    >> Async.AwaitTask
+    >> Async.RunSynchronously
 
 let checkPosition acc (item:EventRead) =
         Assert.IsTrue(item.Position > acc)
@@ -35,11 +47,11 @@ let ``Setup CosmoStore``() =
     with _ -> ()
 
 [<Test>]
-let ``Appends event`` () =
-    let store = conf |> EventStore.getEventStore
+let ``Appends event`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
     
     getEvent 1
-    |> store.AppendEvent "TestSingleStream" ExpectedPosition.Any
+    |> store.AppendEvent streamId ExpectedPosition.Any
     |> Async.AwaitTask
     |> Async.RunSynchronously
     |> (fun er -> 
@@ -47,18 +59,27 @@ let ``Appends event`` () =
     )
 
 [<Test>]
-let ``Get events (all)`` () =
-    let store = conf |> EventStore.getEventStore
+let ``Get event`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
+
+    [1..10] |> appendEvents store |> ignore
+
+    let event =
+        store.GetEvent streamId 3L
+        |> Async.AwaitTask
+        |> Async.RunSynchronously
     
-    [1..10]
-    |> List.map getEvent
-    |> store.AppendEvents "TestStream" ExpectedPosition.Any
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-    |> ignore
+    Assert.AreEqual(3L, event.Position)
+    Assert.AreEqual("Created_3", event.Name)
+
+[<Test>]
+let ``Get events (all)`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
+    
+    [1..10] |> appendEvents store |> ignore
 
     let events =
-        store.GetEvents "TestStream" EventsReadRange.AllEvents
+        store.GetEvents streamId EventsReadRange.AllEvents
         |> Async.AwaitTask
         |> Async.RunSynchronously
     
@@ -66,18 +87,13 @@ let ``Get events (all)`` () =
     events |> List.fold checkPosition 0L |> ignore
 
 [<Test>]
-let ``Get events (from position)`` () =
-    let store = conf |> EventStore.getEventStore
+let ``Get events (from position)`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
     
-    [1..10]
-    |> List.map getEvent
-    |> store.AppendEvents "TestStream" ExpectedPosition.Any
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-    |> ignore
+    [1..10] |> appendEvents store |> ignore
 
     let events =
-        store.GetEvents "TestStream" (EventsReadRange.FromPosition(6L))
+        store.GetEvents streamId (EventsReadRange.FromPosition(6L))
         |> Async.AwaitTask
         |> Async.RunSynchronously
     
@@ -85,18 +101,13 @@ let ``Get events (from position)`` () =
     events |> List.fold checkPosition 5L |> ignore
     
 [<Test>]
-let ``Get events (to position)`` () =
-    let store = conf |> EventStore.getEventStore
-    
-    [1..10]
-    |> List.map getEvent
-    |> store.AppendEvents "TestStream" ExpectedPosition.Any
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-    |> ignore
+let ``Get events (to position)`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
+
+    [1..10] |> appendEvents store |> ignore
 
     let events =
-        store.GetEvents "TestStream" (EventsReadRange.ToPosition(5L))
+        store.GetEvents streamId (EventsReadRange.ToPosition(5L))
         |> Async.AwaitTask
         |> Async.RunSynchronously
     
@@ -104,18 +115,13 @@ let ``Get events (to position)`` () =
     events |> List.fold checkPosition 0L |> ignore
 
 [<Test>]
-let ``Get events (position range)`` () =
-    let store = conf |> EventStore.getEventStore
-    
-    [1..10]
-    |> List.map getEvent
-    |> store.AppendEvents "TestStream" ExpectedPosition.Any
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-    |> ignore
+let ``Get events (position range)`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
+
+    [1..10] |> appendEvents store |> ignore
 
     let events =
-        store.GetEvents "TestStream" (EventsReadRange.PositionRange(5L,7L))
+        store.GetEvents streamId (EventsReadRange.PositionRange(5L,7L))
         |> Async.AwaitTask
         |> Async.RunSynchronously
     
@@ -123,23 +129,26 @@ let ``Get events (position range)`` () =
     events |> List.fold checkPosition 4L |> ignore
 
 [<Test>]
-let ``Get streams (all)`` () =
-    let store = conf |> EventStore.getEventStore
+let ``Get streams (all)`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
     let addEventToStream i =
-        getEvent 1
-        |> store.AppendEvent (sprintf "TestStream%i" i) ExpectedPosition.Any
+        [1..1000]
+        |> List.map getEvent
+        |> store.AppendEvents (sprintf "TestStream%i" i) ExpectedPosition.Any
         |> Async.AwaitTask
         |> Async.RunSynchronously
         |> ignore
     [1..3] |> List.iter addEventToStream
     let streams = store.GetStreams StreamsReadFilter.AllStreams |> Async.AwaitTask |> Async.RunSynchronously
     Assert.AreEqual("TestStream1", streams.Head.Id)
+    Assert.IsTrue(streams.Head.LastUpdatedUtc > DateTime.MinValue)
+    Assert.AreEqual(1000, streams.Head.LastPosition)
     Assert.AreEqual("TestStream2", streams.[1].Id)
     Assert.AreEqual("TestStream3", streams.[2].Id)
     
 [<Test>]
-let ``Get streams (startswith)`` () =
-    let store = conf |> EventStore.getEventStore
+let ``Get streams (startswith)`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
     let addEventToStream i =
         getEvent 1
         |> store.AppendEvent (sprintf "%iTestStream" i) ExpectedPosition.Any
@@ -151,8 +160,8 @@ let ``Get streams (startswith)`` () =
     Assert.AreEqual("2TestStream", streams.Head.Id)
 
 [<Test>]
-let ``Get streams (endswith)`` () =
-    let store = conf |> EventStore.getEventStore
+let ``Get streams (endswith)`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
     let addEventToStream i =
         getEvent 1
         |> store.AppendEvent (sprintf "TestStream%i" i) ExpectedPosition.Any
@@ -164,8 +173,8 @@ let ``Get streams (endswith)`` () =
     Assert.AreEqual("TestStream2", streams.Head.Id)
 
 [<Test>]
-let ``Get streams (contains)`` () =
-    let store = conf |> EventStore.getEventStore
+let ``Get streams (contains)`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
     let addEventToStream i =
         getEvent 1
         |> store.AppendEvent (sprintf "Test%iStream" i) ExpectedPosition.Any
@@ -177,8 +186,8 @@ let ``Get streams (contains)`` () =
     Assert.AreEqual("Test2Stream", streams.Head.Id)
 
 [<Test>]
-let ``Fails to append to existing position`` () =
-    let store = conf |> EventStore.getEventStore
+let ``Fails to append to existing position`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
     Assert.Throws<AggregateException>(fun _ -> 
         getEvent 1
         |> store.AppendEvent "TestSingleStream" ExpectedPosition.Any
@@ -197,8 +206,8 @@ let ``Fails to append to existing position`` () =
     )
 
 [<Test>]
-let ``Fails to append to existing stream if is not expected to exist`` () =
-    let store = conf |> EventStore.getEventStore
+let ``Fails to append to existing stream if is not expected to exist`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
     Assert.Throws<AggregateException>(fun _ -> 
         getEvent 1
         |> store.AppendEvent "TestSingleStream" ExpectedPosition.Any
@@ -217,12 +226,11 @@ let ``Fails to append to existing stream if is not expected to exist`` () =
     )
 
 [<Test>]
-let ``Appends events`` () =
-    let store = conf |> EventStore.getEventStore
+let ``Appends events`` ([<Values(1000, 100000)>] (tp:int)) =
+    let store = tp |> getStore
     let checkCreation acc item =
         Assert.IsTrue(item.CreatedUtc >= acc)
         item.CreatedUtc
-    
 
     [1..1000]
     |> List.map getEvent

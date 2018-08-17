@@ -42,7 +42,7 @@ type EventWrite = {
 
 type Stream = {
     Id : string
-    Position : int64
+    LastPosition : int64
     LastUpdatedUtc: DateTime
 }
 

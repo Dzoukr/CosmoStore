@@ -6,7 +6,8 @@ function storedProcedure(streamId, documentsToCreate, expectedPosition) {
     var context = getContext();
     var collection = context.getCollection();
     var response = context.getResponse();
-    var metadataId = '$_'+streamId;
+    var streamType = "Stream";
+    var eventType = "Event";
 
     function checkError(err) {
         if (err) throw new Error("Error : " + err.message);
@@ -31,14 +32,15 @@ function storedProcedure(streamId, documentsToCreate, expectedPosition) {
     // append event
     function createDocument(err, metadata) {
         if (err) throw new Error("Error" + err.message);
-        checkPosition(metadata.position + 1);
-        var nextPosition = metadata.position;
+        checkPosition(metadata.lastPosition + 1);
+        var nextPosition = metadata.lastPosition;
         var resp = [];                
         for(var i in documentsToCreate) {
             nextPosition++;
             var d = documentsToCreate[i];
             var created = new Date().toISOString();
             var doc = {
+                "type":eventType,
                 "id" : d.id,
                 "correlationId" : d.correlationId,
                 "streamId" : streamId,
@@ -55,10 +57,9 @@ function storedProcedure(streamId, documentsToCreate, expectedPosition) {
                 throw "Failed to append event on position " + nextPosition + " - Rollback. Please try to increase RU for collection Events.";
             }
         }
-
         
-        metadata.position = nextPosition;
-        metadata.lastUpdated = created;
+        metadata.lastPosition = nextPosition;
+        metadata.lastUpdatedUtc = created;
         var acceptedMeta = collection.replaceDocument(metadata._self, metadata, checkErrorFn);
         if (!acceptedMeta) {
             throw "Failed to update metadata for stream - Rollback";
@@ -71,9 +72,9 @@ function storedProcedure(streamId, documentsToCreate, expectedPosition) {
         checkError(err);
         if (metadataResults.length == 0) {
             let newMeta = {
-                refStreamId:streamId,
-                streamId:metadataId,
-                position:0
+                streamId:streamId,
+                type:streamType,
+                lastPosition:0
             }
             return collection.createDocument(collection.getSelfLink(), newMeta, createDocument);
         } else {
@@ -82,7 +83,7 @@ function storedProcedure(streamId, documentsToCreate, expectedPosition) {
     }
 
     // metadata query
-    var metadataQuery = 'SELECT * FROM Events e WHERE e.streamId = "'+ metadataId + '"';
+    var metadataQuery = 'SELECT * FROM Events e WHERE e.streamId = "'+ streamId + '" AND e.type = "'+ streamType +'"';
     var transactionAccepted = collection.queryDocuments(collection.getSelfLink(), metadataQuery, run);
     if (!transactionAccepted) throw "Transaction not accepted, rollback";
 }

@@ -16,10 +16,12 @@ let eventWriteToEventRead streamId position createdUtc (x:EventWrite) = {
     CreatedUtc = createdUtc
 }
 
+let private toDate (s:string) = DateTime.Parse(s)
+
 let documentToStream (x:Document) = {
-    Id = x.GetPropertyValue<string>("refStreamId")
-    LastUpdatedUtc = x.GetPropertyValue<DateTime>("lastUpdatedUtc")
-    Position = x.GetPropertyValue<int64>("position")
+    Id = x.GetPropertyValue<string>("streamId")
+    LastUpdatedUtc = x.GetPropertyValue<DateTime>("lastUpdatedUtc") //|> toDate
+    LastPosition = x.GetPropertyValue<int64>("lastPosition")
 }
 
 let documentToEventRead (doc:Document) = 
