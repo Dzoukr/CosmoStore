@@ -5,11 +5,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CosmoStore.fs" />
+    <EmbeddedResource Include="CosmosDb\StoredProcedures\AppendEvents.js" />
     <Compile Include="CosmosDb\CosmosDb.fs" />
-    <Compile Include="CosmosDb\StoredProcedures.fs" />
     <Compile Include="CosmosDb\Serialization.fs" />
     <Compile Include="CosmosDb\Conversion.fs" />
     <Compile Include="CosmosDb\EventStore.fs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

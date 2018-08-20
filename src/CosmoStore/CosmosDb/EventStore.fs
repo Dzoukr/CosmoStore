@@ -5,10 +5,12 @@ open Microsoft.Azure.Documents
 open Microsoft.Azure.Documents.Client
 open FSharp.Control.Tasks.V2
 open CosmoStore
+open System.Reflection
+open System.IO
 
 let private collectionName = "Events"
 let private partitionKey = "streamId"
-let private appendEventProcName = "AppendEvents" 
+let private appendEventProcName = "AppendEvents"
 
 let private createDatabase dbName (client:DocumentClient) =
     task {
@@ -42,13 +44,22 @@ let private createCollection (dbUri:Uri) (capacity:Capacity) (throughput:int) (c
         return ()
     }
 
+let private getStoredProcedure name =
+    task {
+        let ass = typeof<CosmoStore.CosmosDb.Configuration>.GetTypeInfo().Assembly
+        use stream = ass.GetManifestResourceStream(sprintf "CosmoStore.CosmosDb.StoredProcedures.%s" name)
+        use reader = new StreamReader(stream)
+        return! reader.ReadToEndAsync()
+    }
+
 let private createStoreProcedures (collUri:Uri) (procUri:Uri) (client:DocumentClient) =
     task {
         try
             let! _ = client.DeleteStoredProcedureAsync(procUri)
             ()
         with _ -> ()
-        let! _ = client.CreateStoredProcedureAsync(collUri, StoredProcedure(Id = appendEventProcName, Body = CosmoStore.CosmosDb.StoredProcedures.appendEvent))
+        let! storedProc = getStoredProcedure "AppendEvents.js"
+        let! _ = client.CreateStoredProcedureAsync(collUri, StoredProcedure(Id = appendEventProcName, Body = storedProc))
         return ()
     }
 
