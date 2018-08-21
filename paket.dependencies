@@ -1,6 +1,6 @@
 source https://api.nuget.org/v3/index.json
 
-nuget FSharp.Core
+nuget FSharp.Core = 4.3.1
 nuget TaskBuilder.fs
 nuget Newtonsoft.Json
 nuget Microsoft.Azure.DocumentDB.Core
@@ -15,3 +15,4 @@ group Build
     nuget Fake.Core.Target
     nuget Fake.IO.FileSystem
     nuget Fake.DotNet.Testing.NUnit
+    nuget Fake.Core.ReleaseNotes

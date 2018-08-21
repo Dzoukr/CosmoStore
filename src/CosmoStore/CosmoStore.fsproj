@@ -11,6 +11,5 @@
     <Compile Include="CosmosDb\Conversion.fs" />
     <Compile Include="CosmosDb\EventStore.fs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
