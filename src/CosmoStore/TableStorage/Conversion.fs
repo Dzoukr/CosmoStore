@@ -10,11 +10,12 @@ open System
 open Microsoft.WindowsAzure.Storage.Table
 open Microsoft.WindowsAzure.Storage.Table
 open Microsoft.WindowsAzure.Storage.Table
+open CosmoStore.CosmosDb
 
 let entityToStream (x:DynamicTableEntity) = {
     Id = x.PartitionKey
-    LastUpdatedUtc = x.Properties.["LastUpdatedUtc"].DateTime |> fun x -> x.Value
-    LastPosition = x.Properties.["LastPosition"].Int64Value |> fun x -> x.Value
+    LastUpdatedUtc = x.Properties.["LastUpdatedUtc"].DateTime.Value
+    LastPosition = x.Properties.["LastPosition"].Int64Value.Value
 }
 
 let updateStreamEntity lastPosition (x:DynamicTableEntity) =
@@ -32,4 +33,21 @@ let eventWriteToEntity streamId position (x:EventWrite) : DynamicTableEntity =
     | Some meta ->
         entity.Properties.Add("Metadata", EntityProperty.GeneratePropertyForString(meta |> Serialization.stringFromJToken))
     | None -> ()
+    entity.Properties.Add("CreatedUtc", EntityProperty.CreateEntityPropertyFromObject DateTime.UtcNow)
     entity
+
+let private nullToNone = function
+    | null -> None
+    | v -> Some v
+
+let entityToEventRead (x:DynamicTableEntity) : EventRead =
+    {
+        Id = x.RowKey |> Guid
+        CorrelationId = x.Properties.["CorrelationId"].GuidValue.Value
+        StreamId = x.PartitionKey
+        Position = x.Properties.["Position"].Int64Value.Value
+        Name = x.Properties.["Name"].StringValue
+        Data = x.Properties.["Data"].StringValue |> Serialization.stringToJToken
+        Metadata = x.Properties.["Metadata"].StringValue |> nullToNone |> Option.map Serialization.stringToJToken
+        CreatedUtc = x.Properties.["CreatedUtc"].DateTime.Value
+    }

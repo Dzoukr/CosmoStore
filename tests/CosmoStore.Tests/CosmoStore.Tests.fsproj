@@ -5,7 +5,7 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CosmosDb.fs" />
+    <Compile Include="BasicTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\CosmoStore\CosmoStore.fsproj" />
