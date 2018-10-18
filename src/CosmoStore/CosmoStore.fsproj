@@ -10,6 +10,11 @@
     <Compile Include="CosmosDb\Serialization.fs" />
     <Compile Include="CosmosDb\Conversion.fs" />
     <Compile Include="CosmosDb\EventStore.fs" />
+
+    <Compile Include="TableStorage\TableStorage.fs" />
+    <Compile Include="TableStorage\Serialization.fs" />
+    <Compile Include="TableStorage\Conversion.fs" />
+    <Compile Include="TableStorage\EventStore.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

@@ -4,6 +4,7 @@ nuget FSharp.Core = 4.3.1
 nuget TaskBuilder.fs
 nuget Newtonsoft.Json
 nuget Microsoft.Azure.DocumentDB.Core
+nuget WindowsAzure.Storage
 
 nuget NUnit
 nuget NUnit3TestAdapter

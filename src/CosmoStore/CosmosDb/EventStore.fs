@@ -148,7 +148,7 @@ let getEventStore (configuration:Configuration) =
         do! createCollection dbUri configuration.Capacity configuration.Throughput client
         do! createStoreProcedures eventsCollectionUri appendEventProcUri client
     } |> Async.AwaitTask |> Async.RunSynchronously
-   
+    
     let getOpts = getRequestOptions configuration.Capacity.UsePartitionKey
     {
         AppendEvent = appendEvent getOpts client appendEventProcUri

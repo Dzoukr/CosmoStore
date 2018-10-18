@@ -15,7 +15,7 @@ let testsSrc = "tests/CosmoStore.Tests"
 let package = "CosmoStore"
 let github = package
 let tags = "FSharp CosmosDB DocumentDB EventSourcing EventStore"
-let description = "Simple F# parser for Open API specification"
+let description = "F# Event store for Cosmos DB"
 
 Target.create "Build" (fun _ ->
     appSrc |> DotNet.build id
