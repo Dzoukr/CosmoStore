@@ -9,16 +9,19 @@ open Microsoft.Azure.Documents.Client
 module CosmosDb =
     open CosmoStore.CosmosDb
 
-    let private conf = 
-        CosmoStore.CosmosDb.Configuration.CreateDefault 
+    let private getConfig throughput = 
+        let conf = 
+            CosmoStore.CosmosDb.Configuration.CreateDefault 
                 (Uri "https://localhost:8081") 
                 "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
-
-    let getStore throughput =
         let c = if throughput > 10000 then { conf with Capacity = Unlimited; Throughput = throughput } else { conf with Throughput = throughput }
-        c |> EventStore.getEventStore
+        let n = sprintf "EventStore_%i" throughput
+        { c with DatabaseName = n }
 
-    let setup() =
+    let getStore throughput = throughput |> getConfig |> EventStore.getEventStore
+
+    let setup throughput =
+        let conf = getConfig throughput
         let client = new DocumentClient(conf.ServiceEndpoint, conf.AuthKey)
         try
             client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(conf.DatabaseName, "Events")) 
@@ -46,7 +49,9 @@ module TableStorage =
         let table = client.GetTableReference("Events")
         try
             table.DeleteIfExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
-        with ex -> ()
+        with _ -> ()
+
+let getStreamId () = sprintf "TestStream_%A" (Guid.NewGuid())
 
 let getEvent i =
     {
@@ -57,9 +62,7 @@ let getEvent i =
         Metadata = JValue("TEST STRING META") :> JToken |> Some
     }
 
-let streamId = "TestStream"
-
-let appendEvents store =
+let appendEvents store streamId =
     List.map getEvent
     >> store.AppendEvents streamId ExpectedPosition.Any
     >> Async.AwaitTask
@@ -75,19 +78,21 @@ type StoreType =
     | TableStorage = 2
 
 let getEventStore = function
-    | StoreType.CosmosSmall -> 
-        CosmosDb.setup()
-        CosmosDb.getStore 1000
-    | StoreType.CosmosBig -> 
-        CosmosDb.setup()
-        CosmosDb.getStore 100000
-    | StoreType.TableStorage -> 
-        TableStorage.setup()
-        TableStorage.getStore()
+    | StoreType.CosmosSmall -> CosmosDb.getStore 1000
+    | StoreType.CosmosBig -> CosmosDb.getStore 100000
+    | StoreType.TableStorage -> TableStorage.getStore()   
+
+let getEmptyEventStore typ =
+    do match typ with
+        | StoreType.CosmosSmall -> CosmosDb.setup 1000
+        | StoreType.CosmosBig -> CosmosDb.setup 100000
+        | StoreType.TableStorage -> TableStorage.setup()
+    typ |> getEventStore
 
 [<Test>]
 let ``Appends event`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
+    let streamId = getStreamId()
 
     getEvent 1
     |> store.AppendEvent streamId ExpectedPosition.Any
@@ -100,8 +105,9 @@ let ``Appends event`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, Stor
 [<Test>]
 let ``Get event`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
+    let streamId = getStreamId()
 
-    [1..10] |> appendEvents store |> ignore
+    [1..10] |> appendEvents store streamId |> ignore
 
     let event =
         store.GetEvent streamId 3L
@@ -114,8 +120,9 @@ let ``Get event`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreTyp
 [<Test>]
 let ``Get events (all)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
-    
-    [1..10] |> appendEvents store |> ignore
+    let streamId = getStreamId()
+
+    [1..10] |> appendEvents store streamId |> ignore
 
     let events =
         store.GetEvents streamId EventsReadRange.AllEvents
@@ -128,8 +135,9 @@ let ``Get events (all)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, S
 [<Test>]
 let ``Get events (from position)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
+    let streamId = getStreamId()
 
-    [1..10] |> appendEvents store |> ignore
+    [1..10] |> appendEvents store streamId |> ignore
 
     let events =
         store.GetEvents streamId (EventsReadRange.FromPosition(6L))
@@ -142,8 +150,9 @@ let ``Get events (from position)`` ([<Values(StoreType.CosmosSmall, StoreType.Co
 [<Test>]
 let ``Get events (to position)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
+    let streamId = getStreamId()
 
-    [1..10] |> appendEvents store |> ignore
+    [1..10] |> appendEvents store streamId |> ignore
 
     let events =
         store.GetEvents streamId (EventsReadRange.ToPosition(5L))
@@ -156,8 +165,9 @@ let ``Get events (to position)`` ([<Values(StoreType.CosmosSmall, StoreType.Cosm
 [<Test>]
 let ``Get events (position range)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
+    let streamId = getStreamId()
 
-    [1..10] |> appendEvents store |> ignore
+    [1..10] |> appendEvents store streamId |> ignore
 
     let events =
         store.GetEvents streamId (EventsReadRange.PositionRange(5L,7L))
@@ -169,7 +179,7 @@ let ``Get events (position range)`` ([<Values(StoreType.CosmosSmall, StoreType.C
 
 [<Test>]
 let ``Get streams (all)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
+    let store = typ |> getEmptyEventStore
     let addEventToStream i =
         [1..99]
         |> List.map getEvent
@@ -187,7 +197,7 @@ let ``Get streams (all)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, 
     
 [<Test>]
 let ``Get streams (startswith)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
+    let store = typ |> getEmptyEventStore
     let addEventToStream i =
         getEvent 1
         |> store.AppendEvent (sprintf "%iTestStream" i) ExpectedPosition.Any
@@ -200,7 +210,7 @@ let ``Get streams (startswith)`` ([<Values(StoreType.CosmosSmall, StoreType.Cosm
 
 [<Test>]
 let ``Get streams (endswith)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
+    let store = typ |> getEmptyEventStore
     let addEventToStream i =
         getEvent 1
         |> store.AppendEvent (sprintf "TestStream%i" i) ExpectedPosition.Any
@@ -213,7 +223,7 @@ let ``Get streams (endswith)`` ([<Values(StoreType.CosmosSmall, StoreType.Cosmos
 
 [<Test>]
 let ``Get streams (contains)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
+    let store = typ |> getEmptyEventStore
     let addEventToStream i =
         getEvent 1
         |> store.AppendEvent (sprintf "Test%iStream" i) ExpectedPosition.Any
@@ -227,15 +237,17 @@ let ``Get streams (contains)`` ([<Values(StoreType.CosmosSmall, StoreType.Cosmos
 [<Test>]
 let ``Fails to append to existing position`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
+    let streamId = getStreamId()
+
     Assert.Throws<AggregateException>(fun _ -> 
         getEvent 1
-        |> store.AppendEvent "TestSingleStream" ExpectedPosition.Any
+        |> store.AppendEvent streamId ExpectedPosition.Any
         |> Async.AwaitTask
         |> Async.RunSynchronously
         |> ignore
 
         getEvent 1
-        |> store.AppendEvent "TestSingleStream" (ExpectedPosition.Exact(1L))
+        |> store.AppendEvent streamId (ExpectedPosition.Exact(1L))
         |> Async.AwaitTask
         |> Async.RunSynchronously
         |> ignore
@@ -247,15 +259,16 @@ let ``Fails to append to existing position`` ([<Values(StoreType.CosmosSmall, St
 [<Test>]
 let ``Fails to append to existing stream if is not expected to exist`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
+    let streamId = getStreamId()
     Assert.Throws<AggregateException>(fun _ -> 
         getEvent 1
-        |> store.AppendEvent "TestSingleStream" ExpectedPosition.Any
+        |> store.AppendEvent streamId ExpectedPosition.Any
         |> Async.AwaitTask
         |> Async.RunSynchronously
         |> ignore
 
         getEvent 1
-        |> store.AppendEvent "TestSingleStream" ExpectedPosition.NoStream
+        |> store.AppendEvent streamId ExpectedPosition.NoStream
         |> Async.AwaitTask
         |> Async.RunSynchronously
         |> ignore
@@ -267,13 +280,15 @@ let ``Fails to append to existing stream if is not expected to exist`` ([<Values
 [<Test>]
 let ``Appends events`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
+    let streamId = getStreamId()
+
     let checkCreation acc item =
         Assert.IsTrue(item.CreatedUtc >= acc)
         item.CreatedUtc
 
     [1..99]
     |> List.map getEvent
-    |> store.AppendEvents "TestMultipleStreamBig" ExpectedPosition.Any
+    |> store.AppendEvents streamId ExpectedPosition.Any
     |> Async.AwaitTask
     |> Async.RunSynchronously
     |> (fun er -> 
