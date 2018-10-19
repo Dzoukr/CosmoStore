@@ -5,13 +5,13 @@ open Microsoft.WindowsAzure.Storage
 open Microsoft.WindowsAzure.Storage.Table
 open CosmoStore
 open FSharp.Control.Tasks.V2
-open Microsoft.WindowsAzure.Storage
+open CosmoStore.TableStorage
 
 let private tableName = "Events"
 
 let private tryGetStreamMetadata (table:CloudTable) (streamId:string) =
     task {
-        let operation = TableOperation.Retrieve<DynamicTableEntity>(streamId, "Stream")
+        let operation = TableOperation.Retrieve<DynamicTableEntity>(streamId, Conversion.streamRowKey)
         let! r = table.ExecuteAsync(operation)
         match r.Result with
         | null -> return None
@@ -24,10 +24,10 @@ let private validatePosition streamId (nextPos:int64) = function
     | ExpectedPosition.Any -> ()
     | ExpectedPosition.NoStream -> 
         if nextPos > 1L then 
-            failwithf "Stream '%s' was expected to be empty, but contains %i events" streamId (nextPos - 1L)
+            failwithf "ESERROR_POSITION_STREAMEXISTS: Stream '%s' was expected to be empty, but contains %i events" streamId (nextPos - 1L)
     | ExpectedPosition.Exact expectedPos ->
         if nextPos <> expectedPos then
-            failwithf "Stream '%s' was expected to have next position %i, but has %i" streamId expectedPos nextPos
+            failwithf "ESERROR_POSITION_POSITIONNOTMATCH: Stream '%s' was expected to have next position %i, but has %i" streamId expectedPos nextPos
 
 
 let appendEvents (client:CloudTableClient) (streamId:string) (expectedPosition:ExpectedPosition) (events:EventWrite list) =
@@ -62,8 +62,8 @@ let appendEvents (client:CloudTableClient) (streamId:string) (expectedPosition:E
             |> Conversion.updateStreamEntity (lastPosition + (int64 events.Length))
             |> batchOperation.Replace
         | None -> 
-            let e = DynamicTableEntity(streamId, "Stream")
-            e
+            streamId
+            |> Conversion.newStreamEntity
             |> Conversion.updateStreamEntity (int64 events.Length)
             |> batchOperation.Insert
 
@@ -72,7 +72,9 @@ let appendEvents (client:CloudTableClient) (streamId:string) (expectedPosition:E
         
         let! results = table.ExecuteBatchAsync(batchOperation)
         return results 
-        |> Seq.map (fun x -> x.Result :?> DynamicTableEntity |> Conversion.entityToEventRead)
+        |> Seq.map (fun x -> x.Result :?> DynamicTableEntity)
+        |> Seq.filter Conversion.isEvent
+        |> Seq.map Conversion.entityToEventRead
         |> Seq.toList
         |> List.sortBy (fun x -> x.Position)
     }
@@ -84,25 +86,23 @@ let appendEvent (client:CloudTableClient) (streamId:string) (expectedPosition:Ex
     }
 
 let rec private executeQuery (table:CloudTable) (query:TableQuery<_>) (token:TableContinuationToken) (values:Collections.Generic.List<_>) =
-    match token with
-    | null -> task { return values }
-    | t -> 
-        task {
-            let! res = table.ExecuteQuerySegmentedAsync(query, t)
-            do values.AddRange(res.Results)
-            return! executeQuery table query res.ContinuationToken values
-        }
+    task {
+        let! res = table.ExecuteQuerySegmentedAsync(query, token)
+        do values.AddRange(res.Results)
+        match res.ContinuationToken with
+        | null -> return values
+        | t -> return! executeQuery table query t values
+    }
 
 let private getStreams (client:CloudTableClient) (streamsRead:StreamsReadFilter) =
     let table = client.GetTableReference(tableName)
-    let q = TableQuery<DynamicTableEntity>().Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, "Stream"))
+    let q = Querying.allStreams
     let byReadFilter (s:Stream) =
         match streamsRead with
         | StreamsReadFilter.AllStreams -> true
         | StreamsReadFilter.Contains c -> s.Id.Contains(c)
         | StreamsReadFilter.EndsWith c -> s.Id.EndsWith(c)
         | StreamsReadFilter.StarsWith c -> s.Id.StartsWith(c)
-
 
     task {
         let token = TableContinuationToken()
@@ -115,22 +115,9 @@ let private getStreams (client:CloudTableClient) (streamsRead:StreamsReadFilter)
             |> List.sortBy (fun x -> x.Id)
     }
 
-
 let private getEvents (client:CloudTableClient) streamId (eventsRead:EventsReadRange) =
     let table = client.GetTableReference(tableName)
-    let basicQuery = 
-            TableQuery<DynamicTableEntity>()
-                .Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, streamId))
-                .Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.NotEqual, "Stream"))
-    let q =
-        match eventsRead with
-        | AllEvents -> basicQuery
-        | FromPosition p -> basicQuery.Where(TableQuery.GenerateFilterCondition("Position", QueryComparisons.GreaterThanOrEqual, (p.ToString())))
-        | ToPosition p -> basicQuery.Where(TableQuery.GenerateFilterCondition("Position", QueryComparisons.LessThanOrEqual, (p.ToString())))
-        | PositionRange(f,t) ->
-            basicQuery
-                .Where(TableQuery.GenerateFilterCondition("Position", QueryComparisons.GreaterThanOrEqual, (f.ToString())))
-                .Where(TableQuery.GenerateFilterCondition("Position", QueryComparisons.LessThanOrEqual, (t.ToString())))
+    let q = Querying.allEventsFiltered streamId eventsRead 
     task {
         let token = TableContinuationToken()
         let! results = executeQuery table q token (Collections.Generic.List())

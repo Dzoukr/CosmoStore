@@ -1,26 +1,19 @@
 module CosmoStore.TableStorage.Conversion
 
 open System
-open Microsoft.WindowsAzure.Storage
 open Microsoft.WindowsAzure.Storage.Table
 open CosmoStore
-open Microsoft.WindowsAzure.Storage.Table
-open Microsoft.WindowsAzure.Storage.Table
-open System
-open Microsoft.WindowsAzure.Storage.Table
-open Microsoft.WindowsAzure.Storage.Table
-open Microsoft.WindowsAzure.Storage.Table
-open CosmoStore.CosmosDb
+
+let internal streamRowKey = "Stream"
 
 let entityToStream (x:DynamicTableEntity) = {
     Id = x.PartitionKey
-    LastUpdatedUtc = x.Properties.["LastUpdatedUtc"].DateTime.Value
-    LastPosition = x.Properties.["LastPosition"].Int64Value.Value
+    LastUpdatedUtc = x.Timestamp.UtcDateTime
+    LastPosition = x.Properties.["Position"].Int64Value.Value
 }
 
 let updateStreamEntity lastPosition (x:DynamicTableEntity) =
-    x.Properties.["LastUpdatedUtc"] <- EntityProperty.CreateEntityPropertyFromObject DateTime.UtcNow
-    x.Properties.["LastPosition"] <- EntityProperty.GeneratePropertyForLong(lastPosition |> Nullable)
+    x.Properties.["Position"] <- EntityProperty.GeneratePropertyForLong(lastPosition |> Nullable)
     x
 
 let eventWriteToEntity streamId position (x:EventWrite) : DynamicTableEntity = 
@@ -33,12 +26,15 @@ let eventWriteToEntity streamId position (x:EventWrite) : DynamicTableEntity =
     | Some meta ->
         entity.Properties.Add("Metadata", EntityProperty.GeneratePropertyForString(meta |> Serialization.stringFromJToken))
     | None -> ()
-    entity.Properties.Add("CreatedUtc", EntityProperty.CreateEntityPropertyFromObject DateTime.UtcNow)
     entity
 
 let private nullToNone = function
     | null -> None
     | v -> Some v
+
+let isEvent (x:DynamicTableEntity) = x.RowKey <> streamRowKey
+
+let newStreamEntity streamId = DynamicTableEntity(streamId, "Stream")
 
 let entityToEventRead (x:DynamicTableEntity) : EventRead =
     {
@@ -49,5 +45,5 @@ let entityToEventRead (x:DynamicTableEntity) : EventRead =
         Name = x.Properties.["Name"].StringValue
         Data = x.Properties.["Data"].StringValue |> Serialization.stringToJToken
         Metadata = x.Properties.["Metadata"].StringValue |> nullToNone |> Option.map Serialization.stringToJToken
-        CreatedUtc = x.Properties.["CreatedUtc"].DateTime.Value
+        CreatedUtc = x.Timestamp.UtcDateTime
     }

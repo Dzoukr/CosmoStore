@@ -33,8 +33,6 @@ type OptionConverter() =
 
 // settings
 let private settings = JsonSerializerSettings()
-settings.NullValueHandling <- NullValueHandling.Ignore
-settings.ContractResolver <- CamelCasePropertyNamesContractResolver()
 settings.Converters.Add(OptionConverter())
 
 let serialize obj = JsonConvert.SerializeObject(obj, settings)

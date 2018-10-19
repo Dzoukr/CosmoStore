@@ -171,7 +171,7 @@ let ``Get events (position range)`` ([<Values(StoreType.CosmosSmall, StoreType.C
 let ``Get streams (all)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
     let addEventToStream i =
-        [1..1000]
+        [1..99]
         |> List.map getEvent
         |> store.AppendEvents (sprintf "TestStream%i" i) ExpectedPosition.Any
         |> Async.AwaitTask
@@ -181,7 +181,7 @@ let ``Get streams (all)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, 
     let streams = store.GetStreams StreamsReadFilter.AllStreams |> Async.AwaitTask |> Async.RunSynchronously
     Assert.AreEqual("TestStream1", streams.Head.Id)
     Assert.IsTrue(streams.Head.LastUpdatedUtc > DateTime.MinValue)
-    Assert.AreEqual(1000, streams.Head.LastPosition)
+    Assert.AreEqual(99, streams.Head.LastPosition)
     Assert.AreEqual("TestStream2", streams.[1].Id)
     Assert.AreEqual("TestStream3", streams.[2].Id)
     
@@ -271,7 +271,7 @@ let ``Appends events`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, Sto
         Assert.IsTrue(item.CreatedUtc >= acc)
         item.CreatedUtc
 
-    [1..1000]
+    [1..99]
     |> List.map getEvent
     |> store.AppendEvents "TestMultipleStreamBig" ExpectedPosition.Any
     |> Async.AwaitTask
