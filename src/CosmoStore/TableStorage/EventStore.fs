@@ -6,6 +6,7 @@ open Microsoft.WindowsAzure.Storage.Table
 open CosmoStore
 open FSharp.Control.Tasks.V2
 open CosmoStore.TableStorage
+open Microsoft.WindowsAzure.Storage
 
 let private tableName = "Events"
 
@@ -136,9 +137,13 @@ let private getEvent (client:CloudTableClient) streamId position =
     }
 
 let getEventStore (configuration:Configuration) = 
-    let credentials = Auth.StorageCredentials(configuration.AccountName, configuration.AuthKey)
-    let uri = StorageUri(configuration.ServiceEndpoint)
-    let account = CloudStorageAccount(credentials, uri, uri, uri, uri)
+    let account = 
+        match configuration.Account with
+        | Cloud (accountName, authKey) -> 
+            let credentials = Auth.StorageCredentials(accountName, authKey)
+            CloudStorageAccount(credentials, true)
+        | LocalEmulator -> CloudStorageAccount.DevelopmentStorageAccount
+
     let client = account.CreateCloudTableClient()
     client.GetTableReference("Events").CreateIfNotExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
     {

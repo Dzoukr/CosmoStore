@@ -9,6 +9,10 @@ open Microsoft.Azure.Documents.Client
 module CosmosDb =
     open CosmoStore.CosmosDb
 
+    let private smallSize = 1000
+    let private bigSize = 100000
+
+
     let private getConfig throughput = 
         let conf = 
             CosmoStore.CosmosDb.Configuration.CreateDefault 
@@ -18,9 +22,7 @@ module CosmosDb =
         let n = sprintf "EventStore_%i" throughput
         { c with DatabaseName = n }
 
-    let getStore throughput = throughput |> getConfig |> EventStore.getEventStore
-
-    let setup throughput =
+    let private cleanup throughput =
         let conf = getConfig throughput
         let client = new DocumentClient(conf.ServiceEndpoint, conf.AuthKey)
         try
@@ -30,26 +32,30 @@ module CosmosDb =
             |> ignore
         with _ -> ()
 
+    let eventStoreSmall = 
+        smallSize |> cleanup
+        smallSize |> getConfig |> EventStore.getEventStore
+    let eventStoreBig = 
+        bigSize |> cleanup
+        bigSize |> getConfig |> EventStore.getEventStore
+
 module TableStorage =
     open CosmoStore.TableStorage
     open Microsoft.WindowsAzure.Storage
 
-    let private conf = 
-        CosmoStore.TableStorage.Configuration.CreateDefault
-                (Uri "http://127.0.0.1:10002/devstoreaccount1") 
-                "devstoreaccount1" 
-                "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+    let private conf = Configuration.CreateDefaultForLocalEmulator()
 
-    let getStore() = conf |> EventStore.getEventStore
-
-    let setup() =
-        let credentials = Auth.StorageCredentials(conf.AccountName, conf.AuthKey) 
-        let account = CloudStorageAccount(credentials, conf.ServiceEndpoint, conf.ServiceEndpoint, conf.ServiceEndpoint, conf.ServiceEndpoint)
+    let private cleanup() =
+        let account = CloudStorageAccount.DevelopmentStorageAccount
         let client = account.CreateCloudTableClient()
         let table = client.GetTableReference("Events")
         try
             table.DeleteIfExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
         with _ -> ()
+    
+    let eventStore = 
+        cleanup()
+        conf |> EventStore.getEventStore
 
 let getStreamId () = sprintf "TestStream_%A" (Guid.NewGuid())
 
@@ -78,16 +84,9 @@ type StoreType =
     | TableStorage = 2
 
 let getEventStore = function
-    | StoreType.CosmosSmall -> CosmosDb.getStore 1000
-    | StoreType.CosmosBig -> CosmosDb.getStore 100000
-    | StoreType.TableStorage -> TableStorage.getStore()   
-
-let getEmptyEventStore typ =
-    do match typ with
-        | StoreType.CosmosSmall -> CosmosDb.setup 1000
-        | StoreType.CosmosBig -> CosmosDb.setup 100000
-        | StoreType.TableStorage -> TableStorage.setup()
-    typ |> getEventStore
+    | StoreType.CosmosSmall -> CosmosDb.eventStoreSmall
+    | StoreType.CosmosBig -> CosmosDb.eventStoreBig
+    | StoreType.TableStorage -> TableStorage.eventStore   
 
 [<Test>]
 let ``Appends event`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
@@ -179,60 +178,65 @@ let ``Get events (position range)`` ([<Values(StoreType.CosmosSmall, StoreType.C
 
 [<Test>]
 let ``Get streams (all)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEmptyEventStore
+    let store = typ |> getEventStore
     let addEventToStream i =
         [1..99]
         |> List.map getEvent
-        |> store.AppendEvents (sprintf "TestStream%i" i) ExpectedPosition.Any
+        |> store.AppendEvents (sprintf "A_%i" i) ExpectedPosition.Any
         |> Async.AwaitTask
         |> Async.RunSynchronously
         |> ignore
     [1..3] |> List.iter addEventToStream
     let streams = store.GetStreams StreamsReadFilter.AllStreams |> Async.AwaitTask |> Async.RunSynchronously
-    Assert.AreEqual("TestStream1", streams.Head.Id)
+    Assert.AreEqual("A_1", streams.Head.Id)
     Assert.IsTrue(streams.Head.LastUpdatedUtc > DateTime.MinValue)
     Assert.AreEqual(99, streams.Head.LastPosition)
-    Assert.AreEqual("TestStream2", streams.[1].Id)
-    Assert.AreEqual("TestStream3", streams.[2].Id)
+    Assert.AreEqual("A_2", streams.[1].Id)
+    Assert.AreEqual("A_3", streams.[2].Id)
     
 [<Test>]
 let ``Get streams (startswith)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEmptyEventStore
+    let store = typ |> getEventStore
+    let startsWith = Guid.NewGuid().ToString("N")
     let addEventToStream i =
         getEvent 1
-        |> store.AppendEvent (sprintf "%iTestStream" i) ExpectedPosition.Any
+        |> store.AppendEvent (sprintf "X%i_%s" i startsWith) ExpectedPosition.Any
         |> Async.AwaitTask
         |> Async.RunSynchronously
         |> ignore
     [1..3] |> List.iter addEventToStream
-    let streams = store.GetStreams (StreamsReadFilter.StarsWith("2")) |> Async.AwaitTask |> Async.RunSynchronously
-    Assert.AreEqual("2TestStream", streams.Head.Id)
+    let streams = store.GetStreams (StreamsReadFilter.StarsWith("X2_"+startsWith)) |> Async.AwaitTask |> Async.RunSynchronously
+    Assert.AreEqual(sprintf "X2_%s" startsWith, streams.Head.Id)
 
 [<Test>]
 let ``Get streams (endswith)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEmptyEventStore
+    let store = typ |> getEventStore
+    let endsWith = Guid.NewGuid().ToString("N")
     let addEventToStream i =
         getEvent 1
-        |> store.AppendEvent (sprintf "TestStream%i" i) ExpectedPosition.Any
+        |> store.AppendEvent (sprintf "X%i_%s" i endsWith) ExpectedPosition.Any
         |> Async.AwaitTask
         |> Async.RunSynchronously
         |> ignore
     [1..3] |> List.iter addEventToStream
-    let streams = store.GetStreams (StreamsReadFilter.EndsWith("2")) |> Async.AwaitTask |> Async.RunSynchronously
-    Assert.AreEqual("TestStream2", streams.Head.Id)
+    let streams = store.GetStreams (StreamsReadFilter.EndsWith(endsWith)) |> Async.AwaitTask |> Async.RunSynchronously
+    Assert.AreEqual(3, streams.Length)
+    Assert.AreEqual(sprintf "X1_%s" endsWith, streams.Head.Id)
 
 [<Test>]
 let ``Get streams (contains)`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEmptyEventStore
+    let store = typ |> getEventStore
+    let contains = Guid.NewGuid().ToString("N")
     let addEventToStream i =
         getEvent 1
-        |> store.AppendEvent (sprintf "Test%iStream" i) ExpectedPosition.Any
+        |> store.AppendEvent (sprintf "C_%s_%i" contains i) ExpectedPosition.Any
         |> Async.AwaitTask
         |> Async.RunSynchronously
         |> ignore
     [1..3] |> List.iter addEventToStream
-    let streams = store.GetStreams (StreamsReadFilter.Contains("2")) |> Async.AwaitTask |> Async.RunSynchronously
-    Assert.AreEqual("Test2Stream", streams.Head.Id)
+    let streams = store.GetStreams (StreamsReadFilter.Contains(contains)) |> Async.AwaitTask |> Async.RunSynchronously
+    Assert.AreEqual(3, streams.Length)
+    Assert.AreEqual(sprintf "C_%s_1" contains, streams.Head.Id)
 
 [<Test>]
 let ``Fails to append to existing position`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
