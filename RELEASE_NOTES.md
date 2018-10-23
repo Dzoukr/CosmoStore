@@ -1,3 +1,6 @@
+### 1.1.1 - October 23 2018
+* Package description update
+
 ### 1.1.0 - October 22 2018
 * Added support for Azure Table Storage
 

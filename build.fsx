@@ -14,8 +14,8 @@ let testsSrc = "tests/CosmoStore.Tests"
 
 let package = "CosmoStore"
 let github = package
-let tags = "FSharp CosmosDB DocumentDB EventSourcing EventStore"
-let description = "F# Event store for Cosmos DB"
+let tags = "FSharp CosmosDB DocumentDB EventSourcing EventStore Azure TableStorage"
+let description = "F# Event store for Azure Cosmos DB and Azure Table Storage"
 
 Target.create "Build" (fun _ ->
     appSrc |> DotNet.build id
@@ -49,6 +49,7 @@ Target.create "Nuget" (fun _ ->
             sprintf "PackageLicenseUrl=\"http://github.com/dzoukr/%s/blob/master/LICENSE.md\"" github
             sprintf "PackageProjectUrl=\"http://github.com/dzoukr/%s\"" github
             "PackageIconUrl=\"\""
+            "PackageIconUrl=\"https://raw.githubusercontent.com/Dzoukr/CosmoStore/master/logo.png\""
             sprintf "PackageTags=\"%s\"" tags
             "Copyright=\"Roman Provazník - 2018\""
             "Authors=\"Roman Provazník\""
