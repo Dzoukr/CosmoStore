@@ -4,6 +4,8 @@
 <img src="https://github.com/Dzoukr/CosmoStore/raw/master/logo.png" width="150px"/>
 </p>
 
+F# Event store library for Azure Cosmos DB & Azure Table Storage
+
 ## Features
 
 - Support for Azure Cosmos DB
@@ -13,7 +15,6 @@
 - Storage agnostic F# API
 - Simple Stream querying
 
-F# Event store library for Azure Cosmos DB & Azure Table Storage
 
 ## Installation
 First install NuGet package [![NuGet](https://img.shields.io/nuget/v/CosmoStore.svg?style=flat)](https://www.nuget.org/packages/CosmoStore/)
