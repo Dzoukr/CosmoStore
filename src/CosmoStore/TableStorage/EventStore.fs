@@ -6,7 +6,6 @@ open Microsoft.WindowsAzure.Storage.Table
 open CosmoStore
 open FSharp.Control.Tasks.V2
 open CosmoStore.TableStorage
-open Microsoft.WindowsAzure.Storage
 
 let private tableName = "Events"
 
