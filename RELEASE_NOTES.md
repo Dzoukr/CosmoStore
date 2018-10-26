@@ -1,3 +1,6 @@
+### 1.1.2 - October 26 2018
+* Fixing problem with not storing Event metadata #1
+
 ### 1.1.1 - October 23 2018
 * Package description update
 

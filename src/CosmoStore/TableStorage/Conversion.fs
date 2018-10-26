@@ -3,6 +3,7 @@ module CosmoStore.TableStorage.Conversion
 open System
 open Microsoft.WindowsAzure.Storage.Table
 open CosmoStore
+open System.Collections.Generic
 
 let internal streamRowKey = "Stream"
 
@@ -28,10 +29,14 @@ let eventWriteToEntity streamId position (x:EventWrite) : DynamicTableEntity =
     | None -> ()
     entity
 
-let private nullToNone = function
-    | null -> None
-    | v -> Some v
-
+let private tryStringValue key (dict:IDictionary<string, EntityProperty>) = 
+    match dict.TryGetValue(key) with
+    | true, v ->
+        match v with
+        | null -> None
+        | x -> x.StringValue |> Some
+    | false, _ -> None
+    
 let isEvent (x:DynamicTableEntity) = x.RowKey <> streamRowKey
 
 let newStreamEntity streamId = DynamicTableEntity(streamId, "Stream")
@@ -44,6 +49,6 @@ let entityToEventRead (x:DynamicTableEntity) : EventRead =
         Position = x.Properties.["Position"].Int64Value.Value
         Name = x.Properties.["Name"].StringValue
         Data = x.Properties.["Data"].StringValue |> Serialization.stringToJToken
-        Metadata = x.Properties.["Metadata"].StringValue |> nullToNone |> Option.map Serialization.stringToJToken
+        Metadata = x.Properties |> tryStringValue "Metadata" |> Option.map Serialization.stringToJToken
         CreatedUtc = x.Timestamp.UtcDateTime
     }
