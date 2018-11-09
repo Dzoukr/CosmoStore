@@ -1,3 +1,6 @@
+### 1.1.3 - November 09 2018
+* Fixing issue with ExpectedPosition.NoStream #3
+
 ### 1.1.2 - October 26 2018
 * Fixing problem with not storing Event metadata #1
 

@@ -18,7 +18,7 @@
         if (expectedPosition.mode == "any") {
             return;
         }
-        if (expectedPosition.mode == "noStream" && nextPosition > 0) {
+        if (expectedPosition.mode == "noStream" && nextPosition > 1) {
             throw "ESERROR_POSITION_STREAMEXISTS";
         }
         if (expectedPosition.mode == "exact" && nextPosition != expectedPosition.position) {
