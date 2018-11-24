@@ -7,8 +7,6 @@ open CosmoStore
 open FSharp.Control.Tasks.V2
 open CosmoStore.TableStorage
 
-let private tableName = "Events"
-
 let private tryGetStreamMetadata (table:CloudTable) (streamId:string) =
     task {
         let operation = TableOperation.Retrieve<DynamicTableEntity>(streamId, Conversion.streamRowKey)
@@ -29,9 +27,7 @@ let private validatePosition streamId (nextPos:int64) = function
         if nextPos <> expectedPos then
             failwithf "ESERROR_POSITION_POSITIONNOTMATCH: Stream '%s' was expected to have next position %i, but has %i" streamId expectedPos nextPos
 
-
-let appendEvents (client:CloudTableClient) (streamId:string) (expectedPosition:ExpectedPosition) (events:EventWrite list) =
-    let table = client.GetTableReference(tableName)
+let private appendEvents (table:CloudTable) (streamId:string) (expectedPosition:ExpectedPosition) (events:EventWrite list) =
     
     task {
         
@@ -79,9 +75,9 @@ let appendEvents (client:CloudTableClient) (streamId:string) (expectedPosition:E
         |> List.sortBy (fun x -> x.Position)
     }
 
-let appendEvent (client:CloudTableClient) (streamId:string) (expectedPosition:ExpectedPosition) (event:EventWrite) =
+let private appendEvent (table:CloudTable) (streamId:string) (expectedPosition:ExpectedPosition) (event:EventWrite) =
     task {
-        let! events = event |> List.singleton |> appendEvents client streamId expectedPosition
+        let! events = event |> List.singleton |> appendEvents table streamId expectedPosition
         return events.Head
     }
 
@@ -94,8 +90,7 @@ let rec private executeQuery (table:CloudTable) (query:TableQuery<_>) (token:Tab
         | t -> return! executeQuery table query t values
     }
 
-let private getStreams (client:CloudTableClient) (streamsRead:StreamsReadFilter) =
-    let table = client.GetTableReference(tableName)
+let private getStreams (table:CloudTable) (streamsRead:StreamsReadFilter) =
     let q = Querying.allStreams
     let byReadFilter (s:Stream) =
         match streamsRead with
@@ -115,8 +110,7 @@ let private getStreams (client:CloudTableClient) (streamsRead:StreamsReadFilter)
             |> List.sortBy (fun x -> x.Id)
     }
 
-let private getEvents (client:CloudTableClient) streamId (eventsRead:EventsReadRange) =
-    let table = client.GetTableReference(tableName)
+let private getEvents (table:CloudTable) streamId (eventsRead:EventsReadRange) =
     let q = Querying.allEventsFiltered streamId eventsRead 
     task {
         let token = TableContinuationToken()
@@ -128,10 +122,10 @@ let private getEvents (client:CloudTableClient) streamId (eventsRead:EventsReadR
             |> List.sortBy (fun x -> x.Position)
     }
 
-let private getEvent (client:CloudTableClient) streamId position =
+let private getEvent (table:CloudTable) streamId position =
     task {
         let filter = EventsReadRange.PositionRange(position, position)
-        let! events = getEvents client streamId filter
+        let! events = getEvents table streamId filter
         return events.Head
     }
 
@@ -144,11 +138,12 @@ let getEventStore (configuration:Configuration) =
         | LocalEmulator -> CloudStorageAccount.DevelopmentStorageAccount
 
     let client = account.CreateCloudTableClient()
-    client.GetTableReference("Events").CreateIfNotExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+    client.GetTableReference(configuration.TableName).CreateIfNotExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+    let table = client.GetTableReference(configuration.TableName)
     {
-        AppendEvent = appendEvent client
-        AppendEvents = appendEvents client
-        GetEvent = getEvent client
-        GetEvents = getEvents client
-        GetStreams = getStreams client
+        AppendEvent = appendEvent table
+        AppendEvents = appendEvents table
+        GetEvent = getEvent table
+        GetEvents = getEvents table
+        GetStreams = getStreams table
     }

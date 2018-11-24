@@ -1,3 +1,7 @@
+### 1.2.0 - November 24 2018
+* Fixing private functions visibility
+* Unused DatabaseName configuration property renamed to TableName and used for specifying destination table
+
 ### 1.1.3 - November 09 2018
 * Fixing issue with ExpectedPosition.NoStream #3
 

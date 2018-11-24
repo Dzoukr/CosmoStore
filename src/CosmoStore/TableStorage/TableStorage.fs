@@ -1,19 +1,20 @@
 namespace CosmoStore.TableStorage
+open System
 
 type StorageAccount =
     | Cloud of accountName:string * authKey:string
     | LocalEmulator
 
 type Configuration = {
-    DatabaseName : string
+    TableName : string
     Account : StorageAccount
 }
 with
     static member CreateDefault accountName authKey = {
-        DatabaseName = "EventStore"
+        TableName = "Events"
         Account = Cloud(accountName, authKey)
     }
     static member CreateDefaultForLocalEmulator () = {
-        DatabaseName = "EventStore"
+        TableName = "Events"
         Account = LocalEmulator
     }
