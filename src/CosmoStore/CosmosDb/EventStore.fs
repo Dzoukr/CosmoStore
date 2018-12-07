@@ -7,6 +7,7 @@ open FSharp.Control.Tasks.V2
 open CosmoStore
 open System.Reflection
 open System.IO
+open CosmoStore.CosmosDb
 
 let private collectionName = "Events"
 let private partitionKey = "streamId"
@@ -19,12 +20,11 @@ let private createDatabase dbName (client:DocumentClient) =
         return ()
     }
  
-let private createCollection (dbUri:Uri) (capacity:Capacity) (throughput:int) (client:DocumentClient) =
+let private createCollection (dbUri:Uri) (throughput:int) (client:DocumentClient) =
     let collection = DocumentCollection( Id = collectionName)
     
-    // partition key
-    if capacity.UsePartitionKey then
-        collection.PartitionKey.Paths.Add(sprintf "/%s" partitionKey)
+    // always use partition key
+    collection.PartitionKey.Paths.Add(sprintf "/%s" partitionKey)
     
     // unique keys
     let streamPath = new System.Collections.ObjectModel.Collection<string>()
@@ -35,7 +35,7 @@ let private createCollection (dbUri:Uri) (capacity:Capacity) (throughput:int) (c
     collection.UniqueKeyPolicy <- new UniqueKeyPolicy(UniqueKeys = keys)
     
     // throughput
-    let throughput = throughput |> capacity.CorrectThroughput
+    let throughput = throughput |> Throughput.correct
     let ro = new RequestOptions()
     ro.OfferThroughput <- Nullable<int>(throughput)
 
@@ -133,9 +133,7 @@ let private getEvent (client:DocumentClient) (collectionUri:Uri) streamId positi
         return events.Head
     }
 
-let private getRequestOptions usePartitionKey streamId =
-    if usePartitionKey then RequestOptions(PartitionKey = PartitionKey(streamId))
-    else RequestOptions()    
+let private getRequestOptions streamId = RequestOptions(PartitionKey = PartitionKey(streamId))
 
 let getEventStore (configuration:Configuration) = 
     let client = new DocumentClient(configuration.ServiceEndpoint, configuration.AuthKey)
@@ -145,14 +143,13 @@ let getEventStore (configuration:Configuration) =
 
     task {
         do! createDatabase configuration.DatabaseName client
-        do! createCollection dbUri configuration.Capacity configuration.Throughput client
+        do! createCollection dbUri configuration.Throughput client
         do! createStoreProcedures eventsCollectionUri appendEventProcUri client
     } |> Async.AwaitTask |> Async.RunSynchronously
     
-    let getOpts = getRequestOptions configuration.Capacity.UsePartitionKey
     {
-        AppendEvent = appendEvent getOpts client appendEventProcUri
-        AppendEvents = appendEvents getOpts client appendEventProcUri
+        AppendEvent = appendEvent getRequestOptions client appendEventProcUri
+        AppendEvents = appendEvents getRequestOptions client appendEventProcUri
         GetEvent = getEvent client eventsCollectionUri
         GetEvents = getEvents client eventsCollectionUri
         GetStreams = getStreams client eventsCollectionUri

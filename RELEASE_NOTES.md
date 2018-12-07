@@ -1,3 +1,7 @@
+### 1.3.0 - November 24 2018
+* Removing Capacity union from configuration #5
+* Reflexing changes in throughput range announced on MS Build 2018
+
 ### 1.2.0 - November 24 2018
 * Fixing private functions visibility
 * Unused DatabaseName configuration property renamed to TableName and used for specifying destination table

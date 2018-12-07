@@ -5,7 +5,7 @@ open CosmoStore
 open CosmoStore.Tests.BasicTests
 
 [<Test>]
-let ``Can read back Events stored without metadata`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
+let ``Can read back Events stored without metadata`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getCleanEventStore
     let streamId = getStreamId()
     let event = 
@@ -19,7 +19,7 @@ let ``Can read back Events stored without metadata`` ([<Values(StoreType.CosmosS
     |> ignore
     
 [<Test>]
-let ``NoStream Position check works for non-existing stream`` ([<Values(StoreType.CosmosSmall, StoreType.CosmosBig, StoreType.TableStorage)>] (typ:StoreType)) =
+let ``NoStream Position check works for non-existing stream`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
     let streamId = getStreamId()
     let event = 
