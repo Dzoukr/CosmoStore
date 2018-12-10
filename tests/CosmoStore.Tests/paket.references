@@ -1,7 +1,6 @@
-FSharp.Core
 NUnit
 NUnit3TestAdapter
 Microsoft.NET.Test.Sdk
-
+FSharp.Core
 Newtonsoft.Json
 Microsoft.Azure.DocumentDB.Core

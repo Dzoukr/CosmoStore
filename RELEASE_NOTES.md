@@ -1,4 +1,7 @@
-### 1.3.0 - November 24 2018
+### 1.3.1 - December 10 2018
+* Lowering versions of basic depedencies
+
+### 1.3.0 - December 08 2018
 * Removing Capacity union from configuration #5
 * Reflexing changes in throughput range announced on MS Build 2018
 
