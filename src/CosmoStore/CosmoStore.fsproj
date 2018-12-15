@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CosmoStore.fs" />
+    <Compile Include="Observable.fs" />
     <EmbeddedResource Include="CosmosDb\StoredProcedures\AppendEvents.js" />
     <Compile Include="CosmosDb\CosmosDb.fs" />
     <Compile Include="CosmosDb\Serialization.fs" />

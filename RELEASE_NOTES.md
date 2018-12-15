@@ -1,3 +1,6 @@
+### 1.4.0 - December 15 2018
+* Appended events can be observed over IObservable
+
 ### 1.3.1 - December 10 2018
 * Lowering versions of basic depedencies
 

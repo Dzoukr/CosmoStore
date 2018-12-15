@@ -36,6 +36,7 @@ type EventStore = {
     GetEvent : string -> int64 -> Task<EventRead>
     GetEvents : string -> EventsReadRange -> Task<EventRead list>
     GetStreams : StreamsReadFilter -> Task<Stream list>
+    EventAppended : IObservable<EventRead>
 }
 
 ```
@@ -223,6 +224,11 @@ type StreamsReadFilter =
     | EndsWith of string
     | Contains of string
 ```
+
+## Observing appended events
+
+Since version 1.4.0 you can observe appended events by hooking to `EventAppended` property `IObservable<EventRead>`. Use of [FSharp.Control.Reactive](https://www.nuget.org/packages/FSharp.Control.Reactive) library is recommended, but not required.
+
 
 ## Known issues (Azure Table Storage only)
 

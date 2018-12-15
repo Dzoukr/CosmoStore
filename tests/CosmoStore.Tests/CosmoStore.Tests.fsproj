@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="BasicTests.fs" />
     <Compile Include="Issues.fs" />
+    <Compile Include="Observable.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\CosmoStore\CosmoStore.fsproj" />

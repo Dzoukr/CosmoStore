@@ -6,6 +6,8 @@ open Microsoft.WindowsAzure.Storage.Table
 open CosmoStore
 open FSharp.Control.Tasks.V2
 open CosmoStore.TableStorage
+open System.Reactive.Linq
+open System.Reactive.Concurrency
 
 let private tryGetStreamMetadata (table:CloudTable) (streamId:string) =
     task {
@@ -75,12 +77,6 @@ let private appendEvents (table:CloudTable) (streamId:string) (expectedPosition:
         |> List.sortBy (fun x -> x.Position)
     }
 
-let private appendEvent (table:CloudTable) (streamId:string) (expectedPosition:ExpectedPosition) (event:EventWrite) =
-    task {
-        let! events = event |> List.singleton |> appendEvents table streamId expectedPosition
-        return events.Head
-    }
-
 let rec private executeQuery (table:CloudTable) (query:TableQuery<_>) (token:TableContinuationToken) (values:Collections.Generic.List<_>) =
     task {
         let! res = table.ExecuteQuerySegmentedAsync(query, token)
@@ -137,13 +133,16 @@ let getEventStore (configuration:Configuration) =
             CloudStorageAccount(credentials, true)
         | LocalEmulator -> CloudStorageAccount.DevelopmentStorageAccount
 
+    let eventAppended = Event<EventRead>()
     let client = account.CreateCloudTableClient()
     client.GetTableReference(configuration.TableName).CreateIfNotExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+    
     let table = client.GetTableReference(configuration.TableName)
     {
-        AppendEvent = appendEvent table
-        AppendEvents = appendEvents table
+        AppendEvent = fun stream pos -> List.singleton >> appendEvents table stream pos >> Observable.hookEvent eventAppended 
+        AppendEvents = fun stream pos -> appendEvents table stream pos >> Observable.hookEvents eventAppended
         GetEvent = getEvent table
         GetEvents = getEvents table
         GetStreams = getStreams table
+        EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)
     }

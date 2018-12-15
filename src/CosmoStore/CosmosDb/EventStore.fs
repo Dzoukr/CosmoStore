@@ -8,6 +8,8 @@ open CosmoStore
 open System.Reflection
 open System.IO
 open CosmoStore.CosmosDb
+open System.Reactive.Linq
+open System.Reactive.Concurrency
 
 let private collectionName = "Events"
 let private partitionKey = "streamId"
@@ -77,12 +79,6 @@ let private appendEvents getOpts (client:DocumentClient) (storedProcUri:Uri) (st
         |> List.map (fun (evn,(pos,created)) -> Conversion.eventWriteToEventRead streamId pos created evn)
     }
 
-let private appendEvent getOpts (client:DocumentClient) (storedProcUri:Uri) (streamId:string) (expectedPosition:ExpectedPosition) (event:EventWrite) = 
-    task {
-        let! events = event |> List.singleton |> appendEvents getOpts client storedProcUri streamId expectedPosition
-        return events.Head
-    }
-
 let private streamsReadToQuery = function
     | AllStreams -> "", ("@_", null)
     | StarsWith w -> "AND STARTSWITH(e.streamId, @streamId)", ("@streamId", w :> obj)
@@ -140,6 +136,7 @@ let getEventStore (configuration:Configuration) =
     let dbUri = UriFactory.CreateDatabaseUri(configuration.DatabaseName)
     let eventsCollectionUri = UriFactory.CreateDocumentCollectionUri(configuration.DatabaseName, collectionName)
     let appendEventProcUri = UriFactory.CreateStoredProcedureUri(configuration.DatabaseName, collectionName, appendEventProcName)
+    let eventAppended = Event<EventRead>()
 
     task {
         do! createDatabase configuration.DatabaseName client
@@ -148,9 +145,17 @@ let getEventStore (configuration:Configuration) =
     } |> Async.AwaitTask |> Async.RunSynchronously
     
     {
-        AppendEvent = appendEvent getRequestOptions client appendEventProcUri
-        AppendEvents = appendEvents getRequestOptions client appendEventProcUri
+        AppendEvent = fun stream pos -> 
+                        List.singleton 
+                        >> appendEvents getRequestOptions client appendEventProcUri stream pos 
+                        >> Observable.hookEvent eventAppended 
+                        
+        AppendEvents = fun stream pos -> 
+                        appendEvents getRequestOptions client appendEventProcUri stream pos 
+                        >> Observable.hookEvents eventAppended
+
         GetEvent = getEvent client eventsCollectionUri
         GetEvents = getEvents client eventsCollectionUri
         GetStreams = getStreams client eventsCollectionUri
+        EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)
     }

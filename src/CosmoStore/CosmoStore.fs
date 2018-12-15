@@ -52,4 +52,5 @@ type EventStore = {
     GetEvent : string -> int64 -> Task<EventRead>
     GetEvents : string -> EventsReadRange -> Task<EventRead list>
     GetStreams : StreamsReadFilter -> Task<Stream list>
+    EventAppended : IObservable<EventRead>
 }
