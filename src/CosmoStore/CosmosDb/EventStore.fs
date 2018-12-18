@@ -145,14 +145,17 @@ let getEventStore (configuration:Configuration) =
     } |> Async.AwaitTask |> Async.RunSynchronously
     
     {
-        AppendEvent = fun stream pos -> 
-                        List.singleton 
-                        >> appendEvents getRequestOptions client appendEventProcUri stream pos 
-                        >> Observable.hookEvent eventAppended 
+        AppendEvent = fun stream pos event -> task {
+            let! events = appendEvents getRequestOptions client appendEventProcUri stream pos [event]
+            events |> List.iter eventAppended.Trigger
+            return events |> List.head
+        }
                         
-        AppendEvents = fun stream pos -> 
-                        appendEvents getRequestOptions client appendEventProcUri stream pos 
-                        >> Observable.hookEvents eventAppended
+        AppendEvents = fun stream pos events -> task {
+            let! events = appendEvents getRequestOptions client appendEventProcUri stream pos events
+            events |> List.iter eventAppended.Trigger
+            return events
+        } 
 
         GetEvent = getEvent client eventsCollectionUri
         GetEvents = getEvents client eventsCollectionUri

@@ -139,8 +139,16 @@ let getEventStore (configuration:Configuration) =
     
     let table = client.GetTableReference(configuration.TableName)
     {
-        AppendEvent = fun stream pos -> List.singleton >> appendEvents table stream pos >> Observable.hookEvent eventAppended 
-        AppendEvents = fun stream pos -> appendEvents table stream pos >> Observable.hookEvents eventAppended
+        AppendEvent = fun stream pos event -> task {
+            let! events = appendEvents table stream pos [event]
+            events |> List.iter eventAppended.Trigger
+            return events |> List.head
+        }
+        AppendEvents = fun stream pos events -> task {
+            let! events = appendEvents table stream pos events
+            events |> List.iter eventAppended.Trigger
+            return events
+        }
         GetEvent = getEvent table
         GetEvents = getEvents table
         GetStreams = getStreams table
