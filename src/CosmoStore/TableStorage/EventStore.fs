@@ -106,6 +106,18 @@ let private getStreams (table:CloudTable) (streamsRead:StreamsReadFilter) =
             |> List.sortBy (fun x -> x.Id)
     }
 
+let private getStream (table:CloudTable) streamId =
+    let q = Querying.oneStream streamId
+    task {
+        let token = TableContinuationToken()
+        let! results = executeQuery table q token (Collections.Generic.List())
+        return 
+            results
+            |> Seq.toList
+            |> List.map Conversion.entityToStream
+            |> List.head
+    }
+
 let private getEvents (table:CloudTable) streamId (eventsRead:EventsReadRange) =
     let q = Querying.allEventsFiltered streamId eventsRead 
     task {
@@ -152,5 +164,6 @@ let getEventStore (configuration:Configuration) =
         GetEvent = getEvent table
         GetEvents = getEvents table
         GetStreams = getStreams table
+        GetStream = getStream table
         EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)
     }

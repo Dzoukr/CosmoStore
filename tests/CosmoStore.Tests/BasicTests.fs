@@ -227,6 +227,21 @@ let ``Get streams (contains)`` ([<Values(StoreType.CosmosDB, StoreType.TableStor
     Assert.AreEqual(sprintf "C_%s_1" contains, streams.Head.Id)
 
 [<Test>]
+let ``Get stream`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
+    let store = typ |> getEventStore
+    let streamId = (sprintf "OS_%s" (Guid.NewGuid().ToString("N")))
+    [1..10]
+    |> List.map getEvent
+    |> store.AppendEvents streamId ExpectedPosition.Any
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
+    |> ignore
+
+    let stream = store.GetStream streamId |> Async.AwaitTask |> Async.RunSynchronously
+    Assert.AreEqual(10, stream.LastPosition)
+    Assert.AreEqual(streamId, stream.Id)
+
+[<Test>]
 let ``Fails to append to existing position`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
     let store = typ |> getEventStore
     let streamId = getStreamId()

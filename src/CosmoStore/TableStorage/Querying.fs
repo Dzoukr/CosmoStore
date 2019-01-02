@@ -3,7 +3,16 @@ module CosmoStore.TableStorage.Querying
 open Microsoft.WindowsAzure.Storage.Table
 open CosmoStore
 
+let private toQuery filter = TableQuery<DynamicTableEntity>().Where(filter)
+
 let allStreams = TableQuery<DynamicTableEntity>().Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, Conversion.streamRowKey))
+
+let oneStream streamId = 
+    TableQuery.CombineFilters(
+        TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, streamId),
+        TableOperators.And,
+        TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, Conversion.streamRowKey)
+    ) |> toQuery
 
 let private allEventsFilter streamId =
     TableQuery.CombineFilters(
@@ -11,8 +20,6 @@ let private allEventsFilter streamId =
         TableOperators.And,
         TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.NotEqual, Conversion.streamRowKey)
     )
-
-let private toQuery filter = TableQuery<DynamicTableEntity>().Where(filter)
 
 let private withPositionGreaterOrEqual pos filter =
     TableQuery.CombineFilters(

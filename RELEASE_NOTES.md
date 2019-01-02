@@ -1,3 +1,6 @@
+### 1.5.0 - January 02 2019
+* Added GetStream function (mentioned in #7)
+
 ### 1.4.0 - December 15 2018
 * Appended events can be observed over IObservable
 

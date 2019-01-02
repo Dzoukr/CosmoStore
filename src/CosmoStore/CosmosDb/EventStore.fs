@@ -129,6 +129,16 @@ let private getEvent (client:DocumentClient) (collectionUri:Uri) streamId positi
         return events.Head
     }
 
+let private getStream (client:DocumentClient) (collectionUri:Uri) streamId =
+    task {
+        return createQuery 
+                (sprintf "SELECT * FROM %s e WHERE e.type = 'Stream' AND e.streamId = @streamId" collectionName) [("@streamId", streamId :> obj)]
+        |> runQuery<Document> client collectionUri
+        |> Seq.toList
+        |> List.map Conversion.documentToStream
+        |> List.head
+    }
+
 let private getRequestOptions streamId = RequestOptions(PartitionKey = PartitionKey(streamId))
 
 let getEventStore (configuration:Configuration) = 
@@ -160,5 +170,6 @@ let getEventStore (configuration:Configuration) =
         GetEvent = getEvent client eventsCollectionUri
         GetEvents = getEvents client eventsCollectionUri
         GetStreams = getStreams client eventsCollectionUri
+        GetStream = getStream client eventsCollectionUri
         EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)
     }

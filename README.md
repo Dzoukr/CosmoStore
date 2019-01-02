@@ -36,6 +36,7 @@ type EventStore = {
     GetEvent : string -> int64 -> Task<EventRead>
     GetEvents : string -> EventsReadRange -> Task<EventRead list>
     GetStreams : StreamsReadFilter -> Task<Stream list>
+    GetStream : string -> Task<Stream>
     EventAppended : IObservable<EventRead>
 }
 
@@ -208,7 +209,7 @@ type Stream = {
 }
 ```
 
-Streams can be queried using `GetStreams` function. The querying works similar way as filtering Events by range, but here you can query Streams by string `Id`:
+If you know exact value of Stream `Id`, you can use function `GetStream`. To query more Streams, use `GetStreams` function. The querying works similar way as filtering Events by range, but here you can query Streams by `Id`:
 
 ```fsharp
 let allAmazingStream = StreamsReadFilter.StartsWith("MyAmazing") |> eventStore.GetStreams
