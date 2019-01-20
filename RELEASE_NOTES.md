@@ -1,3 +1,6 @@
+### 1.5.1 - January 20 2019
+* Fixing #8
+
 ### 1.5.0 - January 02 2019
 * Added GetStream function (mentioned in #7)
 

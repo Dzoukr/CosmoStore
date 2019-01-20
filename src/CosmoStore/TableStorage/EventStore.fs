@@ -157,9 +157,11 @@ let getEventStore (configuration:Configuration) =
             return events |> List.head
         }
         AppendEvents = fun stream pos events -> task {
-            let! events = appendEvents table stream pos events
-            events |> List.iter eventAppended.Trigger
-            return events
+            if events |> List.isEmpty then return []
+            else 
+                let! events = appendEvents table stream pos events
+                events |> List.iter eventAppended.Trigger
+                return events
         }
         GetEvent = getEvent table
         GetEvents = getEvents table

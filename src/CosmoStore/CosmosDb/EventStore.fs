@@ -162,9 +162,11 @@ let getEventStore (configuration:Configuration) =
         }
                         
         AppendEvents = fun stream pos events -> task {
-            let! events = appendEvents getRequestOptions client appendEventProcUri stream pos events
-            events |> List.iter eventAppended.Trigger
-            return events
+            if events |> List.isEmpty then return []
+            else 
+                let! events = appendEvents getRequestOptions client appendEventProcUri stream pos events
+                events |> List.iter eventAppended.Trigger
+                return events
         } 
 
         GetEvent = getEvent client eventsCollectionUri

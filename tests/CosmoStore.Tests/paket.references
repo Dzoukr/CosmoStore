@@ -1,7 +1,8 @@
-NUnit
-NUnit3TestAdapter
-Microsoft.NET.Test.Sdk
-FSharp.Core
-Newtonsoft.Json
-Microsoft.Azure.DocumentDB.Core
-FSharp.Control.Reactive
+group Tests
+    FSharp.Core
+    NUnit
+    NUnit3TestAdapter
+    Microsoft.NET.Test.Sdk
+    Newtonsoft.Json
+    Microsoft.Azure.DocumentDB.Core
+    FSharp.Control.Reactive

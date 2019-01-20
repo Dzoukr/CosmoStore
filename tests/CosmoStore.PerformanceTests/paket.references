@@ -1,0 +1,3 @@
+group PerformanceTests
+    FSharp.Core
+    BenchmarkDotNet

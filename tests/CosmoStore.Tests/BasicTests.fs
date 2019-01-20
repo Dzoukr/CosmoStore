@@ -14,6 +14,7 @@ module CosmosDb =
         CosmoStore.CosmosDb.Configuration.CreateDefault 
             (Uri "https://localhost:8081") 
             "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+            |> fun cfg -> { cfg with DatabaseName = "CosmosStoreTests" }
 
     let getCleanEventStore() =
         let client = new DocumentClient(config.ServiceEndpoint, config.AuthKey)
@@ -29,13 +30,13 @@ module CosmosDb =
 
 module TableStorage =
     open Microsoft.WindowsAzure.Storage
-
-    let private conf = Configuration.CreateDefaultForLocalEmulator()
+    let private tableName = "CosmosStoreTests"
+    let private conf = Configuration.CreateDefaultForLocalEmulator() |> fun cfg -> { cfg with TableName = tableName }
 
     let getCleanEventStore() =
         let account = CloudStorageAccount.DevelopmentStorageAccount
         let client = account.CreateCloudTableClient()
-        let table = client.GetTableReference("Events")
+        let table = client.GetTableReference(tableName)
         try
             table.DeleteIfExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
         with _ -> ()
@@ -302,3 +303,24 @@ let ``Appends events`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (
         er |> List.fold checkCreation DateTime.MinValue |> ignore
         er |> List.fold checkPosition 0L |> ignore
     )
+
+[<Test>]
+let ``Appending no events does not affect stream metadata`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
+    let store = typ |> getEventStore
+    let streamId = getStreamId()
+    
+    // append single event
+    0 |> getEvent |> store.AppendEvent streamId (ExpectedPosition.Exact(1L)) |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+
+    let stream = store.GetStream streamId |> Async.AwaitTask |> Async.RunSynchronously
+
+    // append empty events
+    List.empty
+    |> List.map getEvent
+    |> store.AppendEvents streamId ExpectedPosition.Any
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
+    |> ignore
+    
+    let streamAfterAppend = store.GetStream streamId |> Async.AwaitTask |> Async.RunSynchronously
+    Assert.AreEqual(stream, streamAfterAppend)
