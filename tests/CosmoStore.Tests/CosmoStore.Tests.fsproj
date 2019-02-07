@@ -9,6 +9,7 @@
     <Compile Include="Domain.fs" />
     <Compile Include="BasicTests.fs" />
     <Compile Include="Issues.fs" />
+    <Compile Include="Observable.fs" />
     <Compile Include="AllTests.fs" />
   </ItemGroup>
   <ItemGroup>

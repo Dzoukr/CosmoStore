@@ -31,6 +31,7 @@ module ExpectoHelpers =
     open Expecto
 
     let equal x y = Expect.equal x y (sprintf "%A = %A" x y)
+    let notEqual x y = Expect.notEqual x y (sprintf "%A != %A" x y)
     let isTrue x = Expect.isTrue x (sprintf "%A = true" x)
     let private checkPosition acc (item:EventRead) =
         isTrue(item.Position > acc)
