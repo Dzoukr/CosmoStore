@@ -1,344 +1,197 @@
 ﻿module CosmoStore.Tests.BasicTests
 
 open System
-open NUnit.Framework
 open CosmoStore
-open Newtonsoft.Json.Linq
-open Microsoft.Azure.Documents.Client
-open CosmoStore.TableStorage
+open Expecto
+open Domain
+open Domain.ExpectoHelpers
 
-module CosmosDb =
-    open CosmoStore.CosmosDb
-
-    let private config = 
-        CosmoStore.CosmosDb.Configuration.CreateDefault 
-            (Uri "https://localhost:8081") 
-            "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
-            |> fun cfg -> { cfg with DatabaseName = "CosmosStoreTests" }
-
-    let getCleanEventStore() =
-        let client = new DocumentClient(config.ServiceEndpoint, config.AuthKey)
-        try
-            do client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(config.DatabaseName, "Events")) 
-            |> Async.AwaitTask 
-            |> Async.RunSynchronously 
-            |> ignore
-        with ex -> ()
-        config |> EventStore.getEventStore
-
-    let eventStore = getCleanEventStore()
-
-module TableStorage =
-    open Microsoft.WindowsAzure.Storage
-    let private tableName = "CosmosStoreTests"
-    let private conf = Configuration.CreateDefaultForLocalEmulator() |> fun cfg -> { cfg with TableName = tableName }
-
-    let getCleanEventStore() =
-        let account = CloudStorageAccount.DevelopmentStorageAccount
-        let client = account.CreateCloudTableClient()
-        let table = client.GetTableReference(tableName)
-        try
-            table.DeleteIfExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
-        with _ -> ()
-        conf |> EventStore.getEventStore
-    
-    let eventStore = getCleanEventStore()
-
-let getStreamId () = sprintf "TestStream_%A" (Guid.NewGuid())
-
-let getEvent i =
-    {
-        Id = Guid.NewGuid()
-        CorrelationId = Guid.NewGuid()
-        Name = sprintf "Created_%i" i
-        Data = JValue("TEST STRING")
-        Metadata = JValue("TEST STRING META") :> JToken |> Some
-    }
-
-let appendEvents store streamId =
-    List.map getEvent
-    >> store.AppendEvents streamId ExpectedPosition.Any
-    >> Async.AwaitTask
-    >> Async.RunSynchronously
-
-let checkPosition acc (item:EventRead) =
-        Assert.IsTrue(item.Position > acc)
-        item.Position
-
-type StoreType =
-    | CosmosDB = 0   
-    | TableStorage = 1
-
-let getEventStore = function
-    | StoreType.CosmosDB -> CosmosDb.eventStore
-    | StoreType.TableStorage -> TableStorage.eventStore   
-
-let getCleanEventStore = function
-    | StoreType.CosmosDB -> CosmosDb.getCleanEventStore()
-    | StoreType.TableStorage -> TableStorage.getCleanEventStore()   
-
-[<Test>]
-let ``Appends event`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-
-    getEvent 1
-    |> store.AppendEvent streamId ExpectedPosition.Any
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-    |> (fun er -> 
-        Assert.AreEqual(1, er.Position)
-    )
-
-[<Test>]
-let ``Get event`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-
-    [1..10] |> appendEvents store streamId |> ignore
-
-    let event =
-        store.GetEvent streamId 3L
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-    
-    Assert.AreEqual(3L, event.Position)
-    Assert.AreEqual("Created_3", event.Name)
-
-[<Test>]
-let ``Get events (all)`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-
-    [1..10] |> appendEvents store streamId |> ignore
-
-    let events =
-        store.GetEvents streamId EventsReadRange.AllEvents
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-    
-    Assert.AreEqual(10, events.Length)
-    events |> List.fold checkPosition 0L |> ignore
-
-[<Test>]
-let ``Get events (from position)`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-
-    [1..10] |> appendEvents store streamId |> ignore
-
-    let events =
-        store.GetEvents streamId (EventsReadRange.FromPosition(6L))
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-    
-    Assert.AreEqual(5, events.Length)
-    events |> List.fold checkPosition 5L |> ignore
-    
-[<Test>]
-let ``Get events (to position)`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-
-    [1..10] |> appendEvents store streamId |> ignore
-
-    let events =
-        store.GetEvents streamId (EventsReadRange.ToPosition(5L))
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-    
-    Assert.AreEqual(5, events.Length)
-    events |> List.fold checkPosition 0L |> ignore
-
-[<Test>]
-let ``Get events (position range)`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-
-    [1..10] |> appendEvents store streamId |> ignore
-
-    let events =
-        store.GetEvents streamId (EventsReadRange.PositionRange(5L,7L))
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-    
-    Assert.AreEqual(3, events.Length)
-    events |> List.fold checkPosition 4L |> ignore
-
-[<Test>]
-let ``Get streams (all)`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let addEventToStream i =
-        [1..99]
-        |> List.map getEvent
-        |> store.AppendEvents (sprintf "A_%i" i) ExpectedPosition.Any
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-        |> ignore
-    [1..3] |> List.iter addEventToStream
-    let streams = store.GetStreams StreamsReadFilter.AllStreams |> Async.AwaitTask |> Async.RunSynchronously
-    Assert.AreEqual("A_1", streams.Head.Id)
-    Assert.IsTrue(streams.Head.LastUpdatedUtc > DateTime.MinValue)
-    Assert.AreEqual(99, streams.Head.LastPosition)
-    Assert.AreEqual("A_2", streams.[1].Id)
-    Assert.AreEqual("A_3", streams.[2].Id)
-    
-[<Test>]
-let ``Get streams (startswith)`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let startsWith = Guid.NewGuid().ToString("N")
-    let addEventToStream i =
-        getEvent 1
-        |> store.AppendEvent (sprintf "X%i_%s" i startsWith) ExpectedPosition.Any
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-        |> ignore
-    [1..3] |> List.iter addEventToStream
-    let streams = store.GetStreams (StreamsReadFilter.StarsWith("X2_"+startsWith)) |> Async.AwaitTask |> Async.RunSynchronously
-    Assert.AreEqual(sprintf "X2_%s" startsWith, streams.Head.Id)
-
-[<Test>]
-let ``Get streams (endswith)`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let endsWith = Guid.NewGuid().ToString("N")
-    let addEventToStream i =
-        getEvent 1
-        |> store.AppendEvent (sprintf "X%i_%s" i endsWith) ExpectedPosition.Any
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-        |> ignore
-    [1..3] |> List.iter addEventToStream
-    let streams = store.GetStreams (StreamsReadFilter.EndsWith(endsWith)) |> Async.AwaitTask |> Async.RunSynchronously
-    Assert.AreEqual(3, streams.Length)
-    Assert.AreEqual(sprintf "X1_%s" endsWith, streams.Head.Id)
-
-[<Test>]
-let ``Get streams (contains)`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let contains = Guid.NewGuid().ToString("N")
-    let addEventToStream i =
-        getEvent 1
-        |> store.AppendEvent (sprintf "C_%s_%i" contains i) ExpectedPosition.Any
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-        |> ignore
-    [1..3] |> List.iter addEventToStream
-    let streams = store.GetStreams (StreamsReadFilter.Contains(contains)) |> Async.AwaitTask |> Async.RunSynchronously
-    Assert.AreEqual(3, streams.Length)
-    Assert.AreEqual(sprintf "C_%s_1" contains, streams.Head.Id)
-
-[<Test>]
-let ``Get stream`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = (sprintf "OS_%s" (Guid.NewGuid().ToString("N")))
-    [1..10]
-    |> List.map getEvent
-    |> store.AppendEvents streamId ExpectedPosition.Any
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-    |> ignore
-
-    let stream = store.GetStream streamId |> Async.AwaitTask |> Async.RunSynchronously
-    Assert.AreEqual(10, stream.LastPosition)
-    Assert.AreEqual(streamId, stream.Id)
-
-[<Test>]
-let ``Fails to append to existing position`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-
-    Assert.Throws<AggregateException>(fun _ -> 
-        getEvent 1
-        |> store.AppendEvent streamId ExpectedPosition.Any
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-        |> ignore
-
-        getEvent 1
-        |> store.AppendEvent streamId (ExpectedPosition.Exact(1L))
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-        |> ignore
-    ) 
-    |> (fun x -> 
-        Assert.IsTrue(x.Message.Contains("ESERROR_POSITION_POSITIONNOTMATCH"))
-    )
-
-[<Test>]
-let ``Fails to append to existing stream if is not expected to exist`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-    Assert.Throws<AggregateException>(fun _ -> 
-        getEvent 1
-        |> store.AppendEvent streamId ExpectedPosition.Any
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-        |> ignore
-
-        getEvent 1
-        |> store.AppendEvent streamId ExpectedPosition.NoStream
-        |> Async.AwaitTask
-        |> Async.RunSynchronously
-        |> ignore
-    ) 
-    |> (fun x -> 
-        Assert.IsTrue(x.Message.Contains("ESERROR_POSITION_STREAMEXISTS"))
-    )
-
-[<Test>]
-let ``Appends events`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-
-    let checkCreation acc item =
-        Assert.IsTrue(item.CreatedUtc >= acc)
-        item.CreatedUtc
-
-    [1..99]
-    |> List.map getEvent
-    |> store.AppendEvents streamId ExpectedPosition.Any
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-    |> (fun er -> 
-        er |> List.fold checkCreation DateTime.MinValue |> ignore
-        er |> List.fold checkPosition 0L |> ignore
-    )
-
-[<Test>]
-let ``Appending no events does not affect stream metadata`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-    
-    // append single event
-    0 |> getEvent |> store.AppendEvent streamId (ExpectedPosition.Exact(1L)) |> Async.AwaitTask |> Async.RunSynchronously |> ignore
-
-    let stream = store.GetStream streamId |> Async.AwaitTask |> Async.RunSynchronously
-
-    // append empty events
-    List.empty
-    |> List.map getEvent
-    |> store.AppendEvents streamId ExpectedPosition.Any
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-    |> ignore
-    
-    let streamAfterAppend = store.GetStream streamId |> Async.AwaitTask |> Async.RunSynchronously
-    Assert.AreEqual(stream, streamAfterAppend)
-
-[<Test>]
-    let ``Appending thousand of events can be read back`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-        let store = typ |> getEventStore
-        let streamId = getStreamId()
+let eventsTests (cfg:TestConfiguration) = 
+    testList "Events" [
         
-        [0..999]
-        |> List.map getEvent
-        |> List.chunkBySize 99
-        |> List.iter (fun evns -> 
-            evns |> store.AppendEvents streamId ExpectedPosition.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
-        )
-        let stream = store.GetStream streamId |> Async.AwaitTask |> Async.RunSynchronously
-        Assert.AreEqual(1000, stream.LastPosition)
+        testTask "Appends event" {
+            let streamId = cfg.GetStreamId()
+            let! e = cfg.GetEvent 0 |> cfg.Store.AppendEvent streamId Any
+            equal e.Position 1L
+        }
+
+        testTask "Append events" {
+            let streamId = cfg.GetStreamId()
+            
+            let! events = [1..99] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId ExpectedPosition.Any
+            areAscending events
+            areNewer events
+        }
         
-        let evntsBack = store.GetEvents streamId EventsReadRange.AllEvents |> Async.AwaitTask |> Async.RunSynchronously
-        Assert.AreEqual(1000, evntsBack.Length)
+        testTask "Gets event" {
+            let streamId = cfg.GetStreamId()
+            do! [1..10] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId Any
+            let! event = cfg.Store.GetEvent streamId 3L
+            equal event.Position 3L
+            equal event.Name "Created_3"
+        }
+
+        testTask "Get events (all)" {
+            let streamId = cfg.GetStreamId()
+            do! [1..10] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId Any
+            let! (events : EventRead list) = cfg.Store.GetEvents streamId EventsReadRange.AllEvents
+            equal 10 events.Length
+            areAscending events
+        }
+
+        testTask "Get events (from position)" {
+            let streamId = cfg.GetStreamId()
+            do! [1..10] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId Any
+            let! (events : EventRead list) = cfg.Store.GetEvents streamId (EventsReadRange.FromPosition(6L))
+            equal 5 events.Length
+            areAscending events 
+        }
         
+        testTask "Get events (to position)" {
+            let streamId = cfg.GetStreamId()
+            do! [1..10] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId Any
+            let! (events : EventRead list) = cfg.Store.GetEvents streamId (EventsReadRange.ToPosition(5L))
+            equal 5 events.Length
+            areAscending events 
+        }
+        
+        testTask "Get events (position range)" {
+            let streamId = cfg.GetStreamId()
+            do! [1..10] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId Any
+            let! (events : EventRead list) = cfg.Store.GetEvents streamId (EventsReadRange.PositionRange(5L,7L))
+            equal 3 events.Length
+            areAscending events 
+            equal 5L events.Head.Position
+        }
+
+        testTask "Fails to append to existing position" {
+            Expect.throwsC (fun _ -> 
+                let streamId = cfg.GetStreamId()
+                do cfg.GetEvent 1 |> cfg.Store.AppendEvent streamId ExpectedPosition.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+                do cfg.GetEvent 1 |> cfg.Store.AppendEvent streamId (ExpectedPosition.Exact(1L)) |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+            ) (fun ex -> 
+                isTrue <| ex.Message.Contains("ESERROR_POSITION_POSITIONNOTMATCH")
+            )
+        }
+
+        testTask "Fails to append to existing stream if is not expected to exist" {
+            Expect.throwsC (fun _ -> 
+                let streamId = cfg.GetStreamId()
+                do cfg.GetEvent 1 |> cfg.Store.AppendEvent streamId ExpectedPosition.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+                do cfg.GetEvent 1 |> cfg.Store.AppendEvent streamId ExpectedPosition.NoStream |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+            ) (fun ex -> 
+                isTrue <| ex.Message.Contains("ESERROR_POSITION_STREAMEXISTS")
+            )
+        }
+
+        testTask "Appending no events does not affect stream metadata" {
+            let streamId = cfg.GetStreamId()
+            // append single event
+            do! 0 |> cfg.GetEvent |> cfg.Store.AppendEvent streamId (ExpectedPosition.Exact(1L))
+            let! stream = cfg.Store.GetStream streamId
+            do! List.empty |> cfg.Store.AppendEvents streamId ExpectedPosition.Any
+            let! streamAfterAppend = cfg.Store.GetStream streamId
+            equal stream streamAfterAppend
+        }
+
+        testTask "Appending 1000 events can be read back" {
+            let streamId = cfg.GetStreamId()
+        
+            [0..999]
+            |> List.map cfg.GetEvent
+            |> List.chunkBySize 99
+            |> List.iter (fun evns -> 
+                evns |> cfg.Store.AppendEvents streamId ExpectedPosition.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+            )
+
+            let! (stream : Stream) = cfg.Store.GetStream streamId
+            equal 1000L stream.LastPosition
+
+            let! (evntsBack : EventRead list) = cfg.Store.GetEvents streamId EventsReadRange.AllEvents
+            equal 1000 evntsBack.Length
+        }
+    ]
+
+let streamsTestsSequenced (cfg:TestConfiguration) =
+    testList "Streams" [
+        
+        testTask "Get streams (all)" {
+            
+            let store = cfg.GetEmptyStore()
+
+            let addEventToStream i =
+                [1..99] 
+                |> List.map cfg.GetEvent 
+                |> store.AppendEvents (sprintf "A_%i" i) ExpectedPosition.Any
+            
+            for i in 1..3 do
+                do! addEventToStream i    
+            let! (streams : Stream list) = store.GetStreams StreamsReadFilter.AllStreams
+            equal ["A_1";"A_2";"A_3"] (streams |> List.map (fun x -> x.Id))
+            equal 99L streams.Head.LastPosition
+            isTrue (streams.Head.LastUpdatedUtc > DateTime.MinValue)
+        }
+        
+        testTask "Get streams (startswith)" {
+            
+            let store = cfg.GetEmptyStore()
+            
+            let name = Guid.NewGuid().ToString("N")
+            let addEventToStream i =
+                [1..99] 
+                |> List.map cfg.GetEvent 
+                |> store.AppendEvents (sprintf "X%i_%s" i name) ExpectedPosition.Any
+            
+            for i in 1..3 do
+                do! addEventToStream i    
+            let! (streams : Stream list) = store.GetStreams (StreamsReadFilter.StarsWith("X2_"))
+            equal ["X2_"+name] (streams |> List.map (fun x -> x.Id))
+            equal 1 streams.Length
+        }
+    ] |> testSequenced
+
+let streamsTests (cfg:TestConfiguration) =
+    testList "Streams" [
+        
+        testTask "Get streams (endswith)" {
+            let endsWith = Guid.NewGuid().ToString("N")
+            let addEventToStream i =
+                cfg.GetEvent 1
+                |> cfg.Store.AppendEvent (sprintf "X%i_%s" i endsWith) ExpectedPosition.Any
+            
+            for i in 1..3 do
+                do! addEventToStream i    
+            let! (streams : Stream list) = cfg.Store.GetStreams (StreamsReadFilter.EndsWith(endsWith))
+            equal 3 streams.Length
+        }
+        
+        testTask "Get streams (contains)" {
+            let contains = Guid.NewGuid().ToString("N")
+            let addEventToStream i =
+                cfg.GetEvent 1
+                |> cfg.Store.AppendEvent (sprintf "C_%s_%i" contains i) ExpectedPosition.Any
+            
+            for i in 1..3 do
+                do! addEventToStream i    
+            let! (streams : Stream list) = cfg.Store.GetStreams (StreamsReadFilter.Contains(contains))
+            equal 3 streams.Length
+            equal (sprintf "C_%s_1" contains) streams.Head.Id
+        }
+
+        testTask "Get stream" {
+            let streamId = (sprintf "OS_%s" (Guid.NewGuid().ToString("N")))
+            do! [1..10]
+                |> List.map cfg.GetEvent
+                |> cfg.Store.AppendEvents streamId ExpectedPosition.Any
+            let! stream = cfg.Store.GetStream streamId
+            equal stream.LastPosition 10L
+            equal stream.Id streamId
+        }
+    ]
+
+let allTests =
+    [
+        eventsTests
+        streamsTestsSequenced
+        streamsTests
+    ]

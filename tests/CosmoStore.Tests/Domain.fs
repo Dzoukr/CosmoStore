@@ -1,4 +1,4 @@
-﻿module CosmoStore.CosmosDb.Tests.Domain
+﻿module CosmoStore.Tests.Domain
 
 open System
 open CosmoStore

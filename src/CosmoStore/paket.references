@@ -1,4 +1,3 @@
-group CosmoStore
-    FSharp.Core
-    Newtonsoft.Json
-    System.Reactive
+FSharp.Core
+Newtonsoft.Json
+System.Reactive

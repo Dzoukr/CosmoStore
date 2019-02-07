@@ -1,33 +1,25 @@
-module CosmoStore.Tests.Issues
+﻿module CosmoStore.Tests.Issues
 
-open NUnit.Framework
+open System
 open CosmoStore
-open CosmoStore.Tests.BasicTests
+open Expecto
+open Domain
+open Domain.ExpectoHelpers
 
-[<Test>]
-let ``Can read back Events stored without metadata`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getCleanEventStore
-    let streamId = getStreamId()
-    let event = 
-        1 |> getEvent |> fun e -> { e with Metadata = None }
-    event
-    |> store.AppendEvent streamId ExpectedPosition.Any
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-    |> fun e ->
-        Assert.AreEqual(None, e.Metadata)
-    |> ignore
-    
-[<Test>]
-let ``NoStream Position check works for non-existing stream`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
-    let store = typ |> getEventStore
-    let streamId = getStreamId()
-    let event = 
-        1 |> getEvent |> fun e -> { e with Metadata = None }
-    event
-    |> store.AppendEvent streamId ExpectedPosition.NoStream
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-    |> fun e ->
-        Assert.AreEqual(None, e.Metadata)
-    |> ignore
+let allTests (cfg:TestConfiguration) = 
+    [
+        testTask "Can read back Events stored without metadata" {
+            let streamId = cfg.GetStreamId()
+            let event = 1 |> cfg.GetEvent |> (fun e -> { e with Metadata = None })
+            let! (e : EventRead) = event |> cfg.Store.AppendEvent streamId Any
+            equal None e.Metadata
+        }
+
+        testTask "NoStream Position check works for non-existing stream" {
+            let streamId = cfg.GetStreamId()
+            let event = 1 |> cfg.GetEvent |> (fun e -> { e with Metadata = None })
+            let! (e : EventRead) = event |> cfg.Store.AppendEvent streamId NoStream
+            equal None e.Metadata
+        }
+
+    ]

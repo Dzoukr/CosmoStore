@@ -7,10 +7,8 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 open Fake.DotNet
-open Fake.DotNet.Testing
 
 let appSrc = "src/CosmoStore"
-//let testsSrc = "tests/CosmoStore.Tests"
 
 let package = "CosmoStore"
 let github = package
@@ -21,8 +19,19 @@ Target.create "Build" (fun _ ->
     appSrc |> DotNet.build id
 )
 
-Target.create "RunTests" (fun _ ->
+Target.create "RunCosmosDbTests" (fun _ ->
     "-p tests/CosmoStore.CosmosDb.Tests" |> DotNet.exec id "run" |> ignore
+)
+Target.create "RunTableStorageTests" (fun _ ->
+    "-p tests/CosmoStore.TableStorage.Tests" |> DotNet.exec id "run" |> ignore
+)
+
+Target.create "RunTests" (fun _ -> 
+    [
+        "RunCosmosDbTests"
+        "RunTableStorageTests"
+    ] 
+    |> List.iter (fun t -> Target.runSimple t [] |> ignore)
 )
 
 Fake.Core.Target.create "Clean" (fun _ -> 
@@ -62,6 +71,7 @@ Target.create "Nuget" (fun _ ->
 )
 
 "Clean" ==> "Build"
+
 "RunTests" ==> "Clean" ==> "Nuget"
 
 // start build
