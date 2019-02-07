@@ -10,7 +10,7 @@ open Fake.DotNet
 open Fake.DotNet.Testing
 
 let appSrc = "src/CosmoStore"
-let testsSrc = "tests/CosmoStore.Tests"
+//let testsSrc = "tests/CosmoStore.Tests"
 
 let package = "CosmoStore"
 let github = package
@@ -22,7 +22,7 @@ Target.create "Build" (fun _ ->
 )
 
 Target.create "RunTests" (fun _ ->
-    testsSrc |> DotNet.test id
+    "-p tests/CosmoStore.CosmosDb.Tests" |> DotNet.exec id "run" |> ignore
 )
 
 Fake.Core.Target.create "Clean" (fun _ -> 

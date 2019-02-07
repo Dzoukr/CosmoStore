@@ -1,0 +1,4 @@
+group CosmosDbTests
+    FSharp.Core
+    Expecto
+    Expecto.VisualStudio.TestAdapter

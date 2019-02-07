@@ -26,6 +26,14 @@ group CosmosDb
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
     nuget Microsoft.Azure.DocumentDB.Core !~> 2 lowest_matching: true
 
+group CosmosDbTests
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget FSharp.Core
+    nuget Expecto
+    nuget Expecto.VisualStudio.TestAdapter
+    
+
 group TableStorage
     source https://api.nuget.org/v3/index.json
     storage: none

@@ -27,3 +27,4 @@ global.json
 .paket/Paket.Restore.targets
 results.trx
 /paket-files/paket.restore.cached
+/.ionide/
