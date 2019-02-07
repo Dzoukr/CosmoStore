@@ -1,0 +1,5 @@
+group CosmosDb
+    FSharp.Core
+    Newtonsoft.Json
+    TaskBuilder.fs
+    Microsoft.Azure.DocumentDB.Core

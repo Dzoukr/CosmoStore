@@ -1,23 +1,4 @@
 version 5.193.0
-group Library
-    source https://api.nuget.org/v3/index.json
-    storage: none
-    nuget FSharp.Core = 4.3.1
-    nuget TaskBuilder.fs !~> 2 lowest_matching: true
-    nuget Newtonsoft.Json !~> 11 lowest_matching: true
-    nuget Microsoft.Azure.DocumentDB.Core !~> 2 lowest_matching: true
-    nuget WindowsAzure.Storage !~> 9 lowest_matching: true
-    nuget System.Reactive !~> 4 lowest_matching: true
-
-group Tests
-    source https://api.nuget.org/v3/index.json
-    storage: none
-    nuget FSharp.Core
-    nuget NUnit
-    nuget NUnit3TestAdapter
-    nuget Microsoft.NET.Test.Sdk
-    nuget FSharp.Control.Reactive
-    nuget Microsoft.Azure.DocumentDB.Core
 
 group Build
     source https://api.nuget.org/v3/index.json
@@ -29,8 +10,37 @@ group Build
     nuget Fake.DotNet.Testing.NUnit
     nuget Fake.Core.ReleaseNotes
 
-group PerformanceTests 
+group CosmoStore
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget FSharp.Core = 4.3.1
+    nuget Newtonsoft.Json !~> 11 lowest_matching: true
+    nuget System.Reactive !~> 4 lowest_matching: true
+
+group CosmosDb
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget FSharp.Core = 4.3.1
+    nuget Newtonsoft.Json !~> 11 lowest_matching: true
+    nuget System.Reactive !~> 4 lowest_matching: true
+    nuget TaskBuilder.fs !~> 2 lowest_matching: true
+    nuget Microsoft.Azure.DocumentDB.Core !~> 2 lowest_matching: true
+
+group TableStorage
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget FSharp.Core = 4.3.1
+    nuget Newtonsoft.Json !~> 11 lowest_matching: true
+    nuget System.Reactive !~> 4 lowest_matching: true
+    nuget TaskBuilder.fs !~> 2 lowest_matching: true
+    nuget WindowsAzure.Storage !~> 9 lowest_matching: true
+
+group Tests
     source https://api.nuget.org/v3/index.json
     storage: none
     nuget FSharp.Core
-    nuget BenchmarkDotNet
+    nuget NUnit
+    nuget NUnit3TestAdapter
+    nuget Microsoft.NET.Test.Sdk
+    nuget FSharp.Control.Reactive
+    nuget Microsoft.Azure.DocumentDB.Core

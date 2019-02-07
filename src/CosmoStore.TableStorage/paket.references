@@ -1,0 +1,5 @@
+group TableStorage
+    FSharp.Core
+    Newtonsoft.Json
+    TaskBuilder.fs
+    WindowsAzure.Storage

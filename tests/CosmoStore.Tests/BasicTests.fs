@@ -324,3 +324,21 @@ let ``Appending no events does not affect stream metadata`` ([<Values(StoreType.
     
     let streamAfterAppend = store.GetStream streamId |> Async.AwaitTask |> Async.RunSynchronously
     Assert.AreEqual(stream, streamAfterAppend)
+
+[<Test>]
+    let ``Appending thousand of events can be read back`` ([<Values(StoreType.CosmosDB, StoreType.TableStorage)>] (typ:StoreType)) =
+        let store = typ |> getEventStore
+        let streamId = getStreamId()
+        
+        [0..999]
+        |> List.map getEvent
+        |> List.chunkBySize 99
+        |> List.iter (fun evns -> 
+            evns |> store.AppendEvents streamId ExpectedPosition.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+        )
+        let stream = store.GetStream streamId |> Async.AwaitTask |> Async.RunSynchronously
+        Assert.AreEqual(1000, stream.LastPosition)
+        
+        let evntsBack = store.GetEvents streamId EventsReadRange.AllEvents |> Async.AwaitTask |> Async.RunSynchronously
+        Assert.AreEqual(1000, evntsBack.Length)
+        

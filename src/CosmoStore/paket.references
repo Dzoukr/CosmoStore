@@ -1,7 +1,4 @@
-group Library
+group CosmoStore
     FSharp.Core
-    TaskBuilder.fs
     Newtonsoft.Json
-    Microsoft.Azure.DocumentDB.Core
-    WindowsAzure.Storage
     System.Reactive
