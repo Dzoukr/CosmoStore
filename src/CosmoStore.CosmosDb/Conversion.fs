@@ -8,6 +8,7 @@ open Newtonsoft.Json.Linq
 let eventWriteToEventRead streamId position createdUtc (x:EventWrite) = {
     Id = x.Id
     CorrelationId = x.CorrelationId
+    CausationId = x.CausationId
     StreamId = streamId
     Position = position
     Name = x.Name
@@ -25,7 +26,8 @@ let documentToStream (x:Document) = {
 let documentToEventRead (doc:Document) = 
     { 
         Id = Guid(doc.Id)
-        CorrelationId = doc.GetPropertyValue<Guid>("correlationId")
+        CorrelationId = doc.GetPropertyValue<string>("correlationId") |> function | null -> None | x -> Some (Guid x)
+        CausationId = doc.GetPropertyValue<string>("causationId") |> function | null -> None | x -> Some (Guid x)
         StreamId = doc.GetPropertyValue<string>("streamId")
         Position = doc.GetPropertyValue<int64>("position")
         Name = doc.GetPropertyValue<string>("name")

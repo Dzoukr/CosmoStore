@@ -6,6 +6,8 @@ open Expecto
 open Domain
 open Domain.ExpectoHelpers
 
+let private withCorrelationId i (e:EventWrite) = { e with CorrelationId = Some i }
+
 let eventsTests (cfg:TestConfiguration) = 
     testList "Events" [
         
@@ -109,6 +111,27 @@ let eventsTests (cfg:TestConfiguration) =
 
             let! (evntsBack : EventRead list) = cfg.Store.GetEvents streamId EventsReadRange.AllEvents
             equal 1000 evntsBack.Length
+        }
+
+        testTask "Can read events by correlation ID" {
+            let addEventToStream corrId i =
+                [1..10] 
+                |> List.map cfg.GetEvent 
+                |> List.map (withCorrelationId corrId)
+                |> cfg.Store.AppendEvents (sprintf "CORR_%i" i) ExpectedPosition.Any
+            
+            let corrId = Guid.NewGuid()
+            for i in 1..3 do
+                do! addEventToStream corrId i
+            
+            let differentCorrId = Guid.NewGuid()
+            for i in 1..3 do
+                do! addEventToStream differentCorrId i
+
+            let! (events : EventRead list) = cfg.Store.GetEventsByCorrelationId corrId
+            let uniqueStreams = events |> List.map (fun x -> x.StreamId) |> List.distinct |> List.sort
+            equal 30 events.Length
+            equal ["CORR_1";"CORR_2";"CORR_3"] uniqueStreams
         }
     ]
 

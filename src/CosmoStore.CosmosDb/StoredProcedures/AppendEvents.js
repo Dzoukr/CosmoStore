@@ -40,6 +40,7 @@
                 "type": eventType,
                 "id": d.id,
                 "correlationId": d.correlationId,
+                "causationId": d.causationId,
                 "streamId": streamId,
                 "position": nextPosition,
                 "name": d.name,

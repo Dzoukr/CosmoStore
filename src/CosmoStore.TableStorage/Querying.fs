@@ -14,6 +14,10 @@ let oneStream streamId =
         TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, Conversion.streamRowKey)
     ) |> toQuery
 
+let allEventsWithCorrelationIdFilter corrId =
+    TableQuery.GenerateFilterConditionForGuid("CorrelationId", QueryComparisons.Equal, corrId)
+    |> toQuery
+
 let private allEventsFilter streamId =
     TableQuery.CombineFilters(
         TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, streamId),

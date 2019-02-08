@@ -12,9 +12,16 @@ type TestConfiguration = {
 }
 
 let private getEvent i =
+    let corr,caus =
+        match i%2, i%3 with
+        | 0, _ -> (Some <| Guid.NewGuid()), None
+        | _, 0 -> None, (Some <| Guid.NewGuid())
+        | _ -> None, None
+
     {
         Id = Guid.NewGuid()
-        CorrelationId = Guid.NewGuid()
+        CorrelationId = corr
+        CausationId = caus
         Name = sprintf "Created_%i" i
         Data = JValue("TEST STRING")
         Metadata = JValue("TEST STRING META") :> JToken |> Some

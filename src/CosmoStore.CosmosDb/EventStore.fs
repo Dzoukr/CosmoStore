@@ -17,7 +17,7 @@ let private appendEventProcName = "AppendEvents"
 
 let private createDatabase dbName (client:DocumentClient) =
     task {
-        let db = new Database (Id = dbName)
+        let db = Database (Id = dbName)
         let! _ = client.CreateDatabaseIfNotExistsAsync(db)
         return ()
     }
@@ -34,7 +34,7 @@ let private createCollection (dbUri:Uri) (throughput:int) (client:DocumentClient
     streamPath.Add("/position")
     let keys = new System.Collections.ObjectModel.Collection<UniqueKey>()
     keys.Add(UniqueKey( Paths = streamPath))
-    collection.UniqueKeyPolicy <- new UniqueKeyPolicy(UniqueKeys = keys)
+    collection.UniqueKeyPolicy <- UniqueKeyPolicy(UniqueKeys = keys)
     
     // throughput
     let throughput = throughput |> Throughput.correct
@@ -129,6 +129,16 @@ let private getEvent (client:DocumentClient) (collectionUri:Uri) streamId positi
         return events.Head
     }
 
+let private getEventsByCorrelationId (client:DocumentClient) (collectionUri:Uri) (corrId:Guid) =
+    task {
+        return createQuery 
+            (sprintf "SELECT * FROM %s e WHERE e.correlationId = @corrId AND e.type = 'Event' ORDER BY e.createdUtc ASC" collectionName)
+            ["@corrId", corrId :> obj]
+        |> runQuery<Document> client collectionUri
+        |> Seq.toList
+        |> List.map Conversion.documentToEventRead
+    }
+
 let private getStream (client:DocumentClient) (collectionUri:Uri) streamId =
     task {
         return createQuery 
@@ -171,6 +181,7 @@ let getEventStore (configuration:Configuration) =
 
         GetEvent = getEvent client eventsCollectionUri
         GetEvents = getEvents client eventsCollectionUri
+        GetEventsByCorrelationId = getEventsByCorrelationId client eventsCollectionUri
         GetStreams = getStreams client eventsCollectionUri
         GetStream = getStream client eventsCollectionUri
         EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)

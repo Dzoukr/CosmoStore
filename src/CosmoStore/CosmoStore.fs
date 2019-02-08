@@ -23,7 +23,8 @@ type StreamsReadFilter =
 
 type EventRead = {
     Id : Guid
-    CorrelationId : Guid
+    CorrelationId : Guid option
+    CausationId : Guid option
     StreamId : string
     Position: int64
     Name : string
@@ -34,7 +35,8 @@ type EventRead = {
 
 type EventWrite = {
     Id : Guid
-    CorrelationId : Guid
+    CorrelationId : Guid option
+    CausationId : Guid option
     Name : string
     Data : JToken
     Metadata : JToken option
@@ -51,6 +53,7 @@ type EventStore = {
     AppendEvents : string -> ExpectedPosition -> EventWrite list -> Task<EventRead list>
     GetEvent : string -> int64 -> Task<EventRead>
     GetEvents : string -> EventsReadRange -> Task<EventRead list>
+    GetEventsByCorrelationId : Guid -> Task<EventRead list>
     GetStreams : StreamsReadFilter -> Task<Stream list>
     GetStream : string -> Task<Stream>
     EventAppended : IObservable<EventRead>

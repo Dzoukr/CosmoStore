@@ -1,4 +1,5 @@
 namespace CosmoStore.TableStorage
+
 open System
 
 type StorageAccount =

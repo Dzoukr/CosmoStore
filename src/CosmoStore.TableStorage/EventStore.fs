@@ -130,12 +130,26 @@ let private getEvents (table:CloudTable) streamId (eventsRead:EventsReadRange) =
             |> List.sortBy (fun x -> x.Position)
     }
 
+let private getEventsByCorrelationId (table:CloudTable) corrId  =
+    let q = Querying.allEventsWithCorrelationIdFilter corrId 
+    task {
+        let token = TableContinuationToken()
+        let! results = executeQuery table q token (Collections.Generic.List())
+        return 
+            results
+            |> Seq.toList
+            |> List.map Conversion.entityToEventRead
+            |> List.sortBy (fun x -> x.CreatedUtc)
+    }
+
 let private getEvent (table:CloudTable) streamId position =
     task {
         let filter = EventsReadRange.PositionRange(position, position)
         let! events = getEvents table streamId filter
         return events.Head
     }
+
+    
 
 let getEventStore (configuration:Configuration) = 
     let account = 
@@ -165,6 +179,7 @@ let getEventStore (configuration:Configuration) =
         }
         GetEvent = getEvent table
         GetEvents = getEvents table
+        GetEventsByCorrelationId = getEventsByCorrelationId table
         GetStreams = getStreams table
         GetStream = getStream table
         EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)
