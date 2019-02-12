@@ -7,32 +7,95 @@ open Fake.IO
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 open Fake.DotNet
+open Fake.IO.FileSystemOperators
 
-let appSrc = "src/CosmoStore"
+module Target =
+    let runParallel n t = Target.run n t []   
 
-let package = "CosmoStore"
-let github = package
-let tags = "FSharp CosmosDB DocumentDB EventSourcing EventStore Azure TableStorage"
-let description = "F# Event store for Azure Cosmos DB and Azure Table Storage"
+let run par = par |> DotNet.exec id "run" |> ignore
+let build par = par |> DotNet.build id |> ignore
 
-Target.create "Build" (fun _ ->
-    appSrc |> DotNet.build id
-)
+type Project = {
+    Src : string
+    Tests : string
+    ReleaseNotes : ReleaseNotes.ReleaseNotes
+    Tags : string
+    Package : string
+    Description : string
+}
 
-Target.create "RunCosmosDbTests" (fun _ ->
-    "-p tests/CosmoStore.CosmosDb.Tests" |> DotNet.exec id "run" |> ignore
-)
-Target.create "RunTableStorageTests" (fun _ ->
-    "-p tests/CosmoStore.TableStorage.Tests" |> DotNet.exec id "run" |> ignore
-)
+let createProject projectName tags desc = 
+    let src = "./src" |> Fake.IO.Path.getFullName
+    let tests = "./tests" |> Fake.IO.Path.getFullName
+    {
+        Src = src </> projectName
+        Tests = tests </> projectName
+        ReleaseNotes = src </> projectName </> "RELEASE_NOTES.md" |> ReleaseNotes.load
+        Tags = "F# FSharp EventStore EventSourcing " + tags
+        Package = projectName
+        Description = desc
+    }
 
-Target.create "RunTests" (fun _ -> 
+let cosmoStore = createProject "CosmoStore" "" "F# Event Store API facade (for current implementation check CosmoStore.* packages)"
+let tableStorage = createProject "CosmoStore.TableStorage" "Azure TableStorage" "F# Event Store for Azure Table Storage"
+let cosmosDb = createProject "CosmoStore.CosmosDb" "Azure Cosmos DB" "F# Event Store for Azure Cosmos DB"
+
+// building projects
+Target.create "BuildCosmoStore" (fun _ -> cosmoStore.Src |> build)
+Target.create "BuildTableStorage" (fun _ -> tableStorage.Src |> build)
+Target.create "BuildCosmosDb" (fun _ -> cosmosDb.Src |> build)
+Target.create "BuildAll" (fun _ -> 
     [
-        "RunCosmosDbTests"
-        "RunTableStorageTests"
-    ] 
-    |> List.iter (fun t -> Target.runSimple t [] |> ignore)
+        "BuildCosmoStore"
+        "BuildTableStorage"
+        "BuildCosmosDb"
+    ] |> List.iter (Target.runParallel 3)
 )
+
+// running tests
+Target.create "TestTableStorage" (fun _ -> run "-p tests/CosmoStore.TableStorage.Tests")
+Target.create "TestCosmosDb" (fun _ -> run "-p tests/CosmoStore.CosmosDb.Tests")
+Target.create "TestAll" (fun _ -> 
+    [
+        "TestTableStorage"
+        "TestCosmosDb"
+    ] 
+    |> List.iter (Target.runParallel 2)
+)
+
+// nugets
+let createNuget (project:Project) =
+    let args = 
+        [
+            sprintf "Title=\"%s\"" project.Package
+            sprintf "Description=\"%s\"" project.Description
+            sprintf "Summary=\"%s\"" project.Description
+            sprintf "PackageVersion=\"%s\"" project.ReleaseNotes.NugetVersion
+            sprintf "PackageReleaseNotes=\"%s\"" (project.ReleaseNotes.Notes |> String.toLines)
+            "PackageLicenseUrl=\"http://github.com/dzoukr/CosmoStore/blob/master/LICENSE.md\""
+            "PackageProjectUrl=\"http://github.com/dzoukr/CosmosStore\"" 
+            "PackageIconUrl=\"\""
+            "PackageIconUrl=\"https://raw.githubusercontent.com/Dzoukr/CosmoStore/master/logo.png\""
+            sprintf "PackageTags=\"%s\"" project.Tags
+            "Copyright=\"Roman Provazník - 2019\""
+            "Authors=\"Roman Provazník\""
+        ] 
+        |> List.map (fun x -> "/p:" + x)
+        |> String.concat " "
+
+    project.Src 
+    |> DotNet.pack (fun p -> { p with Configuration = DotNet.Custom "Release"; OutputPath = Some "../../nuget"; Common = { p.Common with CustomParams = Some args } })
+
+Target.create "NugetCosmoStore" (fun _ -> cosmoStore |> createNuget)
+Target.create "NugetTableStorage" (fun _ -> tableStorage |> createNuget)
+Target.create "NugetCosmosDb" (fun _ -> cosmosDb |> createNuget)
+Target.create "NugetAll" (fun _ -> 
+    [
+        "NugetCosmoStore"
+        "NugetTableStorage"
+        "NugetCosmosDb"
+    ] |> List.iter (Target.runParallel 0)
+)    
 
 Fake.Core.Target.create "Clean" (fun _ -> 
     !! "src/*/bin"
@@ -42,37 +105,8 @@ Fake.Core.Target.create "Clean" (fun _ ->
     |> Shell.deleteDirs
 )
 
-// Read release notes & version info from RELEASE_NOTES.md
-let release = ReleaseNotes.load "RELEASE_NOTES.md"
-
-Target.create "Nuget" (fun _ ->
-    let toNotes = List.map (fun x -> x + System.Environment.NewLine) >> List.fold (+) ""
-    let args = 
-        [
-            sprintf "PackageId=\"%s\"" package
-            sprintf "Title=\"%s\"" package
-            sprintf "Description=\"%s\"" description
-            sprintf "Summary=\"%s\"" description
-            sprintf "PackageVersion=\"%s\"" release.NugetVersion
-            sprintf "PackageReleaseNotes=\"%s\"" (release.Notes |> toNotes)
-            sprintf "PackageLicenseUrl=\"http://github.com/dzoukr/%s/blob/master/LICENSE.md\"" github
-            sprintf "PackageProjectUrl=\"http://github.com/dzoukr/%s\"" github
-            "PackageIconUrl=\"\""
-            "PackageIconUrl=\"https://raw.githubusercontent.com/Dzoukr/CosmoStore/master/logo.png\""
-            sprintf "PackageTags=\"%s\"" tags
-            "Copyright=\"Roman Provazník - 2018\""
-            "Authors=\"Roman Provazník\""
-        ] 
-        |> List.map (fun x -> "/p:" + x)
-        |> String.concat " "
-
-    
-    appSrc |> DotNet.pack (fun p -> { p with Configuration = DotNet.Custom "Release"; OutputPath = Some "../../nuget"; Common = { p.Common with CustomParams = Some args } })
-)
-
-"Clean" ==> "Build"
-
-"RunTests" ==> "Clean" ==> "Nuget"
+"Clean" ==> "TestTableStorage" ==> "NugetTableStorage"
+"Clean" ==> "TestCosmosDb" ==> "NugetCosmosDb"
 
 // start build
-Fake.Core.Target.runOrDefault "Build"
+Fake.Core.Target.runOrDefault "BuildAll"

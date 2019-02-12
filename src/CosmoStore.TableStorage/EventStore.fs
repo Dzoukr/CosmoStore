@@ -149,8 +149,6 @@ let private getEvent (table:CloudTable) streamId position =
         return events.Head
     }
 
-    
-
 let getEventStore (configuration:Configuration) = 
     let account = 
         match configuration.Account with
