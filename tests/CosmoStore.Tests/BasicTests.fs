@@ -167,7 +167,7 @@ let streamsTestsSequenced (cfg:TestConfiguration) =
             
             for i in 1..3 do
                 do! addEventToStream i    
-            let! (streams : Stream list) = store.GetStreams (StreamsReadFilter.StarsWith("X2_"))
+            let! (streams : Stream list) = store.GetStreams (StreamsReadFilter.StartsWith("X2_"))
             equal ["X2_"+name] (streams |> List.map (fun x -> x.Id))
             equal 1 streams.Length
         }

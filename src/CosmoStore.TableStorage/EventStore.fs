@@ -93,7 +93,7 @@ let private getStreams (table:CloudTable) (streamsRead:StreamsReadFilter) =
         | StreamsReadFilter.AllStreams -> true
         | StreamsReadFilter.Contains c -> s.Id.Contains(c)
         | StreamsReadFilter.EndsWith c -> s.Id.EndsWith(c)
-        | StreamsReadFilter.StarsWith c -> s.Id.StartsWith(c)
+        | StreamsReadFilter.StartsWith c -> s.Id.StartsWith(c)
 
     task {
         let token = TableContinuationToken()

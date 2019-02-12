@@ -81,7 +81,7 @@ let private appendEvents getOpts (client:DocumentClient) (storedProcUri:Uri) (st
 
 let private streamsReadToQuery = function
     | AllStreams -> "", ("@_", null)
-    | StarsWith w -> "AND STARTSWITH(e.streamId, @streamId)", ("@streamId", w :> obj)
+    | StartsWith w -> "AND STARTSWITH(e.streamId, @streamId)", ("@streamId", w :> obj)
     | EndsWith w -> "AND ENDSWITH(e.streamId, @streamId)", ("@streamId", w :> obj)
     | Contains t -> "AND CONTAINS(e.streamId, @streamId)", ("@streamId", t :> obj)
 

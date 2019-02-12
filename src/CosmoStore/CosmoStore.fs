@@ -17,7 +17,7 @@ type EventsReadRange =
 
 type StreamsReadFilter =
     | AllStreams
-    | StarsWith of string
+    | StartsWith of string
     | EndsWith of string
     | Contains of string
 
