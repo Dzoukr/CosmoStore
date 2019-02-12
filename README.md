@@ -4,26 +4,31 @@
 <img src="https://github.com/Dzoukr/CosmoStore/raw/master/logo.png" width="150px"/>
 </p>
 
-F# Event store library for Azure Cosmos DB & Azure Table Storage
+F# Event Store library for various storage providers (Cosmos DB, Table Storage)
 
 ## Features
-
+- Storage agnostic F# API
 - Support for Azure Cosmos DB
 - Support for Azure Table Storage
 - Optimistic concurrency
 - ACID compliant
-- Storage agnostic F# API
 - Simple Stream querying
 
 
-## Installation
-First install NuGet package [![NuGet](https://img.shields.io/nuget/v/CosmoStore.svg?style=flat)](https://www.nuget.org/packages/CosmoStore/)
+## Available storage providers
 
-    Install-Package CosmoStore
+| Storage Provider  | Package | Version |
+|---|---|---|
+| none (API definition only) | CosmoStore | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.svg?style=flat)](https://www.nuget.org/packages/CosmoStore/) |
+| Azure Cosmos DB | CosmoStore.CosmosDb  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.CosmosDb.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.CosmosDb/) |
+| Azure Table Storage | CosmoStore.TableStorage  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.TableStorage.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.TableStorage/) |
 
-or using [Paket](http://fsprojects.github.io/Paket/getting-started.html)
 
-    nuget CosmoStore
+## Breaking changes from versions < 2
+* CorrelationId is no longer required value (now `Guid option`)
+* CausationId (optional) is part of `EventRead` & `EventWrite` record (#9)
+* CosmoStore no longer contains any storage specific implementation (#10) - now you need to reference specific `CosmoStore.*` package.
+
 
 ## Event store
 
@@ -35,11 +40,11 @@ type EventStore = {
     AppendEvents : string -> ExpectedPosition -> EventWrite list -> Task<EventRead list>
     GetEvent : string -> int64 -> Task<EventRead>
     GetEvents : string -> EventsReadRange -> Task<EventRead list>
+    GetEventsByCorrelationId : Guid -> Task<EventRead list>
     GetStreams : StreamsReadFilter -> Task<Stream list>
     GetStream : string -> Task<Stream>
     EventAppended : IObservable<EventRead>
 }
-
 ```
 
 Each function on record is explained in separate chapter.
@@ -114,7 +119,8 @@ Events are data structures you want to write (append) to some "shelf" also known
 ```fsharp
 type EventWrite = {
     Id : Guid
-    CorrelationId : Guid
+    CorrelationId : Guid option
+    CausationId : Guid option
     Name : string
     Data : JToken
     Metadata : JToken option
@@ -159,7 +165,8 @@ When reading back Events from Stream, you'll a little bit more information than 
 ```fsharp
 type EventRead = {
     Id : Guid
-    CorrelationId : Guid
+    CorrelationId : Guid option
+    CausationId : Guid option
     StreamId : string
     Position: int64
     Name : string
@@ -195,6 +202,13 @@ type EventsReadRange =
     | FromPosition of int64
     | ToPosition of int64
     | PositionRange of fromPosition:int64 * toPosition:int64
+```
+
+If you are interested in Events based on stored `CorrelationId`, you can use function introduced in version 2 - `GetEventsByCorrelationId`
+
+```fsharp
+let myCorrelationId = ... // Guid value
+let correlatedEvents = myCorrelationId |> eventStore.GetEventsByCorrelationId
 ```
 
 ## Reading Streams from Event store

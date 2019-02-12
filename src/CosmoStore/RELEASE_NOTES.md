@@ -1,3 +1,6 @@
+### 2.0.0 - February 12 2019
+* Version 2 released
+
 ### 2.0.0-beta1 - February 12 2019
 * Spliting project into several Nuget packages #10
 * Adding CausationId #9
