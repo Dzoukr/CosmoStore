@@ -235,7 +235,7 @@ The complete possibilities are defined by `StreamsReadFilter` type:
 ```fsharp
 type StreamsReadFilter =
     | AllStreams
-    | StarsWith of string
+    | StartsWith of string
     | EndsWith of string
     | Contains of string
 ```
