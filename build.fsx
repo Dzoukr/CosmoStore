@@ -36,7 +36,7 @@ let createProject projectName tags desc =
         Description = desc
     }
 
-let cosmoStore = createProject "CosmoStore" "" "F# Event Store API facade (for current implementation check CosmoStore.* packages)"
+let cosmoStore = createProject "CosmoStore" "" "F# Event Store API definition (for storage provider specific implementations check CosmoStore.* packages)"
 let tableStorage = createProject "CosmoStore.TableStorage" "Azure TableStorage" "F# Event Store for Azure Table Storage"
 let cosmosDb = createProject "CosmoStore.CosmosDb" "Azure Cosmos DB" "F# Event Store for Azure Cosmos DB"
 

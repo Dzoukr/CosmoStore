@@ -1,3 +1,6 @@
+### 2.0.1 - February 12 2019
+* Fixing typo StarsWith vs StartsWith
+
 ### 2.0.0 - February 12 2019
 * Version 2 released
 
