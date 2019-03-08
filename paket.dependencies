@@ -31,7 +31,6 @@ group TableStorage
 group LiteDB
     source https://api.nuget.org/v3/index.json
     storage: none
-    nuget FSharp.Core
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
     nuget LiteDB
     nuget LiteDB.FSharp
