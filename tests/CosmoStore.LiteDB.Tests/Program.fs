@@ -1,5 +1,4 @@
-﻿// Learn more about F# at http://fsharp.org
-
+﻿module CosmoStore.LiteDB.Tests.Program
 open System
 
 [<EntryPoint>]

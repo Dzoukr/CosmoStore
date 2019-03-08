@@ -6,5 +6,8 @@
   <ItemGroup>
     <Compile Include="Library.fs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CosmoStore\CosmoStore.fsproj" />
+  </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
