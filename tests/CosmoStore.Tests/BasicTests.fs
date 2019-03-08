@@ -5,12 +5,38 @@ open CosmoStore
 open Expecto
 open Domain
 open Domain.ExpectoHelpers
+open System.Threading.Tasks
 
 let private withCorrelationId i (e:EventWrite) = { e with CorrelationId = Some i }
 
 let eventsTests (cfg:TestConfiguration) = 
     testList "Events" [
         
+        testTask "Append events parallel" {
+            let streamId = cfg.GetStreamId()
+            
+            let storeEvent = async {
+                return! 
+                    [1..10] 
+                    |> List.map cfg.GetEvent 
+                    |> cfg.Store.AppendEvents streamId Any
+                    |> Async.AwaitTask
+            }
+            
+            [1..10]
+            |> List.map (fun _ -> storeEvent)
+            |> Async.Parallel
+            |> Async.RunSynchronously
+            |> ignore
+        }
+
+        // testTask "Store same event twice" {
+        //     let streamId = cfg.GetStreamId()
+        //     let event = cfg.GetEvent 0
+        //     for _ in 1..2 do
+        //         do! event |> cfg.Store.AppendEvent streamId Any
+        // }
+
         testTask "Appends event" {
             let streamId = cfg.GetStreamId()
             let! e = cfg.GetEvent 0 |> cfg.Store.AppendEvent streamId Any

@@ -23,7 +23,7 @@ let private getEvent i =
         CorrelationId = corr
         CausationId = caus
         Name = sprintf "Created_%i" i
-        Data = JValue("TEST STRING")
+        Data = CosmoStore.Tests.Data.json
         Metadata = JValue("TEST STRING META") :> JToken |> Some
     }
 
