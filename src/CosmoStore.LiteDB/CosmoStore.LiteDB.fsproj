@@ -4,7 +4,8 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Library.fs" />
+    <Compile Include="LiteDBConf.fs" />
+    <Compile Include="EventStore.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\CosmoStore\CosmoStore.fsproj" />
