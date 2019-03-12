@@ -41,92 +41,112 @@ let eventWriteToEventRead streamId position createdUtc (x:EventWrite) = {
     CreatedUtc = createdUtc
 }
 
-let private appendEvent (db) (streamId: string) (pos : ExpectedPosition ) (events : EventWrite list) = 
+
+let private appendEvents (db) (streamId: string) (expectedPosition : ExpectedPosition ) (events : EventWrite list) = 
     task {
         let streams = streamsDb db
-        let! currentStream = 
-            task {
-                let findStream = streams.FindById(BsonValue(streamId))
-                let r = if (checkNull findStream) then None else (Some findStream)
-                match r with 
-                | Some a -> return a
-                | None -> 
-                    let i = 
-                        streams.Insert {
-                            Id = streamId
-                            LastPosition  = 0L
-                            LastUpdatedUtc = DateTime.UtcNow
-                        }
-                    return (streams.FindById(i)) 
-            }
-        let nextPos = currentStream.LastPosition + 1L
-        do validatePosition currentStream.Id nextPos pos
+        let lastPosition, metadataEntity = 
+            let findStream = streams.FindById(BsonValue(streamId))
+            if (checkNull findStream) then 0L, None else findStream.LastPosition,(Some findStream)
+            
 
-        //Update stream 
-        let! updatedStream = task {
-            let item = {
-                         Id = currentStream.Id
-                         LastPosition = nextPos
-                         LastUpdatedUtc = DateTime.UtcNow
-                    }
-            let b = streams.Update item
-            if b then return item else return failwithf "Stream with stream id %s can't be updated" currentStream.Id
-        }
+        let nextPos = lastPosition + 1L        
+        do validatePosition streamId nextPos expectedPosition
 
-        //Insert all events
-        events |> List.map (eventWriteToEventRead updatedStream.Id updatedStream.LastPosition  ) |> eve
+        let ops = 
+            events
+            |> List.mapi (fun i evn -> 
+                evn |> eventWriteToEventRead streamId (nextPos + (int64 i)) DateTime.UtcNow
+            )
 
-        return ""
+        let res =
+            match metadataEntity with 
+            | Some s -> 
+                let b = streams.Update ({s with LastPosition = (s.LastPosition + (int64 events.Length)); LastUpdatedUtc = DateTime.UtcNow })
+                if b then () else failwithf "Stream update failed with stream id %s" s.Id
+            | None -> 
+                streams.Insert({Id = streamId; LastPosition = (int64 events.Length); LastUpdatedUtc = DateTime.UtcNow}) |> ignore //TODO: make use of ID if required 
+            let events = eventsDb db
+            let _ = events.InsertBulk ops
+
+            ops
+
+        return res
     }
 
-let private appendEvents = ""
-let private getEvent = ""
-let private getEvents = ""
-let private getEventsByCorrelationId = ""
-let private getStreams = ""
-let private getStream = ""
-let private eventAppended = ""
+
+let private getEvents (db: LiteDatabase) (streamId : string) (eventsRead:EventsReadRange) = 
+    task {
+        let rangeQ = 
+            match eventsRead with
+            | AllEvents -> Query.GTE("LastPosition", BsonValue(0L))
+            | FromPosition f -> Query.GTE("LastPosition", BsonValue(f))
+            | ToPosition t -> Query.Between("LastPosition",BsonValue(0L), BsonValue(t))
+            | PositionRange (f, t) -> Query.Between("LastPosition",BsonValue(f), BsonValue(t))
+        let q = Query.And(Query.EQ("StreamId", BsonValue(streamId)), rangeQ)
+        let events = eventsDb db
+        printfn "Some list if there is any: %A" (events.FindAll())
+        let res = events.Find(q) |> Seq.sortBy(fun x -> x.Position) |>  Seq.toList
+        return res
+    }
+ 
+let private getEvent (db) streamId position =
+        task {
+            let filter = EventsReadRange.PositionRange(position, position)
+            let! events = getEvents db streamId filter
+            return events.Head
+        }
+
+let private getEventsByCorrelationId (db:LiteDatabase) (corrId : Guid)= 
+    task {
+        let q = Query.And(Query.EQ("CorrelationId", BsonValue(corrId)))
+        let events = eventsDb db
+        let res = events.Find(q) |> Seq.sortBy(fun x -> x.CreatedUtc) |> Seq.toList
+        return res
+    }
+let private getStreams (db :LiteDatabase) (streamsRead:StreamsReadFilter) = 
+    task {
+        let streams = streamsDb db
+        let sQ = 
+            match streamsRead with 
+            | AllStreams -> streams.FindAll()
+            | Contains c -> streams.Find(Query.Contains("Id", c))
+            | EndsWith c -> streams.Find(Query.Contains("Id", c)) //TODO: endwith does not exist in litedb
+            | StartsWith c -> streams.Find(Query.StartsWith("Id", c))
+        return sQ |> Seq.toList
+    }
+let private getStream (db :LiteDatabase) (streamId : string) = 
+    task {
+        let streams = streamsDb db
+        return (streams.FindById(BsonValue (streamId)))
+    }
 
 
 
 
 let getEventStore (configuration:Configuration) = 
     let db = createDatabaseUsing configuration
+
+    let eventAppended = Event<EventRead>()
+
+
     {
         AppendEvent = fun stream pos event -> task {
-            return {
-            Id = Guid.Empty
-            CorrelationId = None
-            CausationId = None
-            StreamId = ""
-            Position = 0L
-            Name  = ""
-            Data = JToken.FromObject("")
-            Metadata = None
-            CreatedUtc  = DateTime.Now }
+            let! events = appendEvents db stream pos [event]
+            events |> List.iter eventAppended.Trigger
+            return events |> List.head
         }
-        AppendEvents = fun stream pos events -> task {return []}
-        GetEvent = fun stream pos -> task {
-            return {
-            Id = Guid.Empty
-            CorrelationId = None
-            CausationId = None
-            StreamId = ""
-            Position = 0L
-            Name  = ""
-            Data = JToken.FromObject(null)
-            Metadata = None
-            CreatedUtc  = DateTime.Now }
+        AppendEvents = fun stream pos events -> task {
+            if events |> List.isEmpty then return []
+            else 
+                let! events = appendEvents db stream pos events
+                events |> List.iter eventAppended.Trigger
+                return events
         }
-        GetEvents = fun stream range -> task {return []} 
-        GetEventsByCorrelationId = fun stream -> task {return []}
-        GetStreams = fun filter -> task {return []}
-        GetStream = fun stream -> task {
-             return {
-                 Id  = ""
-                 LastPosition = 0L
-                 LastUpdatedUtc = DateTime.Now
-             }
-        } 
-        EventAppended = Observable.Empty()
+        GetEvent = getEvent db
+        GetEvents = getEvents db
+        GetEventsByCorrelationId = getEventsByCorrelationId db
+        GetStreams = getStreams db
+        GetStream = getStream db
+        EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)
     }

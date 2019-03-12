@@ -3,8 +3,8 @@ open System
 open Expecto
 open Expecto.Logging
 open CosmoStore.Tests
-open CosmoStore.LiteDB.EventStore
-open CosmoStore.LiteDB
+open CosmoStore.LiteDb.EventStore
+open CosmoStore.LiteDb
 
 
 
