@@ -11,7 +11,7 @@ let private config =
     CosmoStore.CosmosDb.Configuration.CreateDefault 
         (Uri "https://localhost:8081") 
         "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
-    |> fun cfg -> { cfg with DatabaseName = "CosmosStoreTests" }
+    |> fun cfg -> { cfg with DatabaseName = "CosmosStoreTests"; Throughput = 10000 }
 
 let private getCleanEventStore() =
     let client = new DocumentClient(config.ServiceEndpoint, config.AuthKey)

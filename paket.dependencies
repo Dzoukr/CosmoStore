@@ -28,6 +28,13 @@ group TableStorage
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
     nuget WindowsAzure.Storage !~> 9 lowest_matching: true
 
+group LiteDB
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget TaskBuilder.fs !~> 2 lowest_matching: true
+    nuget LiteDB
+    nuget LiteDB.FSharp
+
 group Tests
     source https://api.nuget.org/v3/index.json
     storage: none

@@ -23,8 +23,8 @@ let private getEvent i =
         CorrelationId = corr
         CausationId = caus
         Name = sprintf "Created_%i" i
-        Data = JValue("TEST STRING")
-        Metadata = JValue("TEST STRING META") :> JToken |> Some
+        Data = CosmoStore.Tests.Data.json.ToString()
+        Metadata = JValue("TEST STRING META") :> JToken |> (fun x -> x :> obj) |> Some
     }
 
 let defaultTestConfiguration getEmptyStoreFn = {

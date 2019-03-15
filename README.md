@@ -63,8 +63,8 @@ type Configuration = {
     DatabaseName : string
     ServiceEndpoint : Uri
     AuthKey : string
-    Capacity: Capacity
-    Throughput: int
+    Capacity : Capacity
+    Throughput : int
 }
 
 ```
@@ -168,7 +168,7 @@ type EventRead = {
     CorrelationId : Guid option
     CausationId : Guid option
     StreamId : string
-    Position: int64
+    Position : int64
     Name : string
     Data : JToken
     Metadata : JToken option
@@ -219,7 +219,7 @@ Each Stream has own metadata:
 type Stream = {
     Id : string
     LastPosition : int64
-    LastUpdatedUtc: DateTime
+    LastUpdatedUtc : DateTime
 }
 ```
 

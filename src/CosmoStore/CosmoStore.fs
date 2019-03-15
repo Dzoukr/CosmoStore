@@ -21,6 +21,7 @@ type StreamsReadFilter =
     | EndsWith of string
     | Contains of string
 
+[<CLIMutable>]
 type EventRead = {
     Id : Guid
     CorrelationId : Guid option
@@ -28,8 +29,8 @@ type EventRead = {
     StreamId : string
     Position: int64
     Name : string
-    Data : JToken
-    Metadata : JToken option
+    Data : obj
+    Metadata : obj option
     CreatedUtc : DateTime
 }
 
@@ -38,10 +39,11 @@ type EventWrite = {
     CorrelationId : Guid option
     CausationId : Guid option
     Name : string
-    Data : JToken
-    Metadata : JToken option
+    Data : obj
+    Metadata : obj option
 }
 
+[<CLIMutable>]
 type Stream = {
     Id : string
     LastPosition : int64
