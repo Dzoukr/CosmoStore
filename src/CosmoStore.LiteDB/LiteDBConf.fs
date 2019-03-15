@@ -16,7 +16,7 @@ type Configuration = {
         DBMode = Exclusive
     }
 
-module Store = 
+module Store =
     open System.IO
     open LiteDB.FSharp
     open LiteDB
@@ -51,7 +51,3 @@ module Store =
         | LocalDB ->
             let connString = sprintf "Filename=%s;Mode=%s" (databaseFilePath conf.Folder conf.Name) (conf.DBMode.ToString())
             new LiteDatabase(connString, mapper)
-
-
-
-
