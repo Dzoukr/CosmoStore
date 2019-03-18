@@ -2,20 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="47042eea-8e78-41e7-b31e-beabc764ad33" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/fake.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/CosmoStore.Marten/EventStore.fs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/CosmoStore.Marten/MartenConf.fs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.CosmoStore/.idea/contentModel.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.CosmoStore/.idea/contentModel.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.CosmoStore/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.CosmoStore/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/paket.dependencies" beforeDir="false" afterPath="$PROJECT_DIR$/paket.dependencies" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/paket.lock" beforeDir="false" afterPath="$PROJECT_DIR$/paket.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/CosmoStore.Marten/CosmoStore.Marten.fsproj" beforeDir="false" afterPath="$PROJECT_DIR$/src/CosmoStore.Marten/CosmoStore.Marten.fsproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/CosmoStore.Marten/Library.fs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/CosmoStore.Marten/RELEASE_NOTES.md" beforeDir="false" afterPath="$PROJECT_DIR$/src/CosmoStore.Marten/RELEASE_NOTES.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/CosmoStore.Marten/paket.references" beforeDir="false" afterPath="$PROJECT_DIR$/src/CosmoStore.Marten/paket.references" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/CosmoStore.Marten.Tests/Program.fs" beforeDir="false" afterPath="$PROJECT_DIR$/tests/CosmoStore.Marten.Tests/Program.fs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/CosmoStore.Marten.Tests/paket.references" beforeDir="false" afterPath="$PROJECT_DIR$/tests/CosmoStore.Marten.Tests/paket.references" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/CosmoStore.Tests/Domain.fs" beforeDir="false" afterPath="$PROJECT_DIR$/tests/CosmoStore.Tests/Domain.fs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.fsx" beforeDir="false" afterPath="$PROJECT_DIR$/build.fsx" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -39,54 +26,78 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/CosmoStore.Marten/EventStore.fs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="277">
-              <caret line="131" column="104" selection-start-line="131" selection-start-column="104" selection-end-line="131" selection-end-column="104" />
+            <state relative-caret-position="508">
+              <caret line="157" selection-start-line="157" selection-end-line="157" />
               <folding>
-                <marker date="1552904514723" expanded="true" signature="47:7901" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="59:222" ph="..." />
-                <marker date="1552904514723" expanded="true" signature="283:792" ph=" = function ..." />
-                <marker date="1552904514723" expanded="true" signature="367:547" ph=" -&gt; ..." />
-                <marker date="1552904514723" expanded="true" signature="592:792" ph=" -&gt; ..." />
-                <marker date="1552904514723" expanded="true" signature="921:1187" ph=" = { ..." />
-                <marker date="1552904514723" expanded="true" signature="1209:1353" ph="= { ..." />
-                <marker date="1552904514723" expanded="true" signature="1519:3380" ph=" = MailboxProcessor&lt;StreamMessage&gt;.Start(fun inbox -&gt; ..." />
-                <marker date="1552904514723" expanded="true" signature="1559:2833" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="1675:1917" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="1799:1917" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="2078:2252" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="2275:2704" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="2323:2704" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="2894:3370" ph=" -&gt; ..." />
-                <marker date="1552904514723" expanded="true" signature="2925:3351" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="2951:3350" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="3041:3333" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="3074:3333" ph=" -&gt; ..." />
-                <marker date="1552904514723" expanded="true" signature="3240:3294" ph=" exn -&gt; ..." />
-                <marker date="1552904514723" expanded="true" signature="3500:3997" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="3517:3996" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="3541:3714" ph=" = { ..." />
-                <marker date="1552904514723" expanded="true" signature="3746:3952" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="3873:3952" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="4096:4900" ph=" = task { ..." />
-                <marker date="1552904514723" expanded="true" signature="4172:4801" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="4208:4801" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="4949:5121" ph=" = task { ..." />
-                <marker date="1552904514723" expanded="true" signature="5194:5829" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="5211:5828" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="5266:5666" ph="//            let res = session |&gt; Session.query&lt;EventRead&gt; |&gt; Queryable.filter &lt;@ fun x -&gt;  Option.toNullable(x.CorrelationId) = Nullable(corrId) @&gt; |&gt; Seq.toList ..." />
-                <marker date="1552904514723" expanded="true" signature="5893:6490" ph=" = task { ..." />
-                <marker date="1552904514723" expanded="true" signature="5967:6464" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="6004:6464" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="6550:6819" ph=" = task { ..." />
-                <marker date="1552904514723" expanded="true" signature="6698:6813" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="6873:7901" ph=" = ..." />
-                <marker date="1552904514723" expanded="true" signature="6981:7900" ph=" ..." />
-                <marker date="1552904514723" expanded="true" signature="7018:7223" ph=" pos event -&gt; task { ..." />
-                <marker date="1552904514723" expanded="true" signature="7261:7541" ph=" pos events -&gt; task { ..." />
-                <marker date="1552904514723" expanded="true" signature="7324:7527" ph=" then return [] ..." />
+                <marker date="1552904541935" expanded="true" signature="47:7935" ph=" = ..." />
+                <marker date="1552904541935" expanded="false" signature="59:222" ph="..." />
+                <marker date="1552904541935" expanded="true" signature="283:792" ph=" = function ..." />
+                <marker date="1552904541935" expanded="true" signature="367:547" ph=" -&gt; ..." />
+                <marker date="1552904541935" expanded="true" signature="592:792" ph=" -&gt; ..." />
+                <marker date="1552904541935" expanded="true" signature="921:1187" ph=" = { ..." />
+                <marker date="1552904541935" expanded="true" signature="1209:1353" ph="= { ..." />
+                <marker date="1552904541935" expanded="true" signature="1519:3380" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="1559:2833" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="1675:1917" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="1799:1917" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="2078:2252" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="2275:2704" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="2323:2704" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="2894:3370" ph=" -&gt; ..." />
+                <marker date="1552904541935" expanded="true" signature="2925:3351" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="2951:3350" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="3041:3333" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="3074:3333" ph=" -&gt; ..." />
+                <marker date="1552904541935" expanded="true" signature="3240:3294" ph=" exn -&gt; ..." />
+                <marker date="1552904541935" expanded="true" signature="3500:3997" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="3517:3996" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="3541:3714" ph=" = { ..." />
+                <marker date="1552904541935" expanded="true" signature="3746:3952" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="3873:3952" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="4096:4900" ph=" = task { ..." />
+                <marker date="1552904541935" expanded="true" signature="4172:4801" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="4208:4801" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="4949:5121" ph=" = task { ..." />
+                <marker date="1552904541935" expanded="true" signature="5194:5863" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="5211:5862" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="5266:5701" ph="//            let res = session |&gt; Session.query&lt;EventRead&gt; |&gt; Queryable.filter &lt;@ fun x -&gt;  Option.toNullable(x.CorrelationId) = Nullable(corrId) @&gt; |&gt; Seq.toList ..." />
+                <marker date="1552904541935" expanded="true" signature="5927:6524" ph=" = task { ..." />
+                <marker date="1552904541935" expanded="true" signature="6001:6498" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="6038:6498" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="6584:6853" ph=" = task { ..." />
+                <marker date="1552904541935" expanded="true" signature="6732:6847" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="6907:7935" ph=" = ..." />
+                <marker date="1552904541935" expanded="true" signature="7015:7934" ph=" ..." />
+                <marker date="1552904541935" expanded="true" signature="7052:7257" ph=" pos event -&gt; task { ..." />
+                <marker date="1552904541935" expanded="true" signature="7295:7575" ph=" pos events -&gt; task { ..." />
+                <marker date="1552904541935" expanded="true" signature="7358:7561" ph=" then return [] ..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/build.fsx">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="172">
+              <caret line="96" column="54" selection-start-line="96" selection-start-column="54" selection-end-line="96" selection-end-column="54" />
+              <folding>
+                <marker date="1552905069552" expanded="true" signature="3:71" ph="&quot;paket: groupref Build //&quot; ..." />
+                <marker date="1552905069552" expanded="false" signature="77:222" ph="..." />
+                <marker date="1552905069552" expanded="true" signature="237:283" ph=" = ..." />
+                <marker date="1552905069552" expanded="true" signature="403:553" ph="= { ..." />
+                <marker date="1552905069552" expanded="true" signature="594:989" ph=" =  ..." />
+                <marker date="1552905069552" expanded="true" signature="707:988" ph=" ..." />
+                <marker date="1552905069552" expanded="true" signature="1816:1973" ph=" -&gt;  ..." />
+                <marker date="1552905069552" expanded="true" signature="2276:2409" ph=" -&gt;  ..." />
+                <marker date="1552905069552" expanded="true" signature="2456:3543" ph=" = ..." />
+                <marker date="1552905069552" expanded="true" signature="2471:3358" ph=" =  ..." />
+                <marker date="1552905069552" expanded="true" signature="2484:3286" ph=" ..." />
+                <marker date="1552905069552" expanded="true" signature="3854:4011" ph=" -&gt;  ..." />
+                <marker date="1552905069552" expanded="true" signature="4057:4165" ph=" -&gt;  ..." />
               </folding>
             </state>
           </provider>
@@ -285,6 +296,7 @@
         <option value="$PROJECT_DIR$/tests/CosmoStore.Tests/AllTests.fs" />
         <option value="$PROJECT_DIR$/tests/CosmoStore.Tests/BasicTests.fs" />
         <option value="$PROJECT_DIR$/src/CosmoStore.Marten/EventStore.fs" />
+        <option value="$PROJECT_DIR$/build.fsx" />
       </list>
     </option>
   </component>
@@ -406,7 +418,7 @@
       <updated>1552878549707</updated>
       <workItem from="1552878552169" duration="2010000" />
       <workItem from="1552883604520" duration="8591000" />
-      <workItem from="1552895171574" duration="5433000" />
+      <workItem from="1552895171574" duration="6329000" />
     </task>
     <task id="LOCAL-00001" summary="Merge remote-tracking branch 'upstream/master'&#10;&#10;# Conflicts:&#10;#&#9;build.fsx">
       <created>1552878979073</created>
@@ -419,7 +431,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="16034000" />
+    <option name="totallyTimeSpent" value="16930000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -432,9 +444,8 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="1440" y="23" width="1920" height="1057" extended-state="6" />
-    <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2550586" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2550586" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -449,7 +460,7 @@
       <window_info anchor="bottom" id="Version Control" order="9" />
       <window_info anchor="bottom" id="Database Changes" order="10" />
       <window_info anchor="bottom" id="Unit Tests" order="11" />
-      <window_info anchor="bottom" id="Terminal" order="12" visible="true" weight="0.32953367" />
+      <window_info active="true" anchor="bottom" id="Terminal" order="12" visible="true" weight="0.32953367" />
       <window_info anchor="bottom" id="Event Log" order="13" side_tool="true" />
       <window_info anchor="bottom" id="Inspection Results" order="14" weight="0.32953367" />
       <window_info anchor="bottom" id="Build" order="15" weight="0.32953367" />
@@ -497,28 +508,6 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/tests/CosmoStore.CosmosDb.Tests/paket.references">
       <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/build.fsx">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="430">
-          <caret line="84" selection-start-line="84" selection-end-line="84" />
-          <folding>
-            <marker date="1552879217058" expanded="true" signature="3:71" ph="&quot;paket: groupref Build //&quot; ..." />
-            <marker date="1552879217058" expanded="false" signature="77:222" ph="..." />
-            <marker date="1552879217058" expanded="true" signature="237:283" ph=" = ..." />
-            <marker date="1552879217058" expanded="true" signature="403:553" ph="= { ..." />
-            <marker date="1552879217058" expanded="true" signature="594:989" ph=" =  ..." />
-            <marker date="1552879217058" expanded="true" signature="707:988" ph=" ..." />
-            <marker date="1552879217058" expanded="true" signature="1627:1757" ph=" -&gt;  ..." />
-            <marker date="1552879217058" expanded="true" signature="1978:2085" ph=" -&gt;  ..." />
-            <marker date="1552879217058" expanded="true" signature="2132:3219" ph=" = ..." />
-            <marker date="1552879217058" expanded="true" signature="2147:3034" ph=" =  ..." />
-            <marker date="1552879217058" expanded="true" signature="2160:2962" ph=" ..." />
-            <marker date="1552879217058" expanded="true" signature="3459:3589" ph=" -&gt;  ..." />
-            <marker date="1552879217058" expanded="true" signature="3635:3743" ph=" -&gt;  ..." />
-          </folding>
-        </state>
-      </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/CosmoStore.Marten/Library.fs" />
     <entry file="file://$APPLICATION_CONFIG_DIR$/scratches/scratch.txt">
@@ -772,51 +761,73 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/CosmoStore.Marten/EventStore.fs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="277">
-          <caret line="131" column="104" selection-start-line="131" selection-start-column="104" selection-end-line="131" selection-end-column="104" />
+        <state relative-caret-position="508">
+          <caret line="157" selection-start-line="157" selection-end-line="157" />
           <folding>
-            <marker date="1552904514723" expanded="true" signature="47:7901" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="59:222" ph="..." />
-            <marker date="1552904514723" expanded="true" signature="283:792" ph=" = function ..." />
-            <marker date="1552904514723" expanded="true" signature="367:547" ph=" -&gt; ..." />
-            <marker date="1552904514723" expanded="true" signature="592:792" ph=" -&gt; ..." />
-            <marker date="1552904514723" expanded="true" signature="921:1187" ph=" = { ..." />
-            <marker date="1552904514723" expanded="true" signature="1209:1353" ph="= { ..." />
-            <marker date="1552904514723" expanded="true" signature="1519:3380" ph=" = MailboxProcessor&lt;StreamMessage&gt;.Start(fun inbox -&gt; ..." />
-            <marker date="1552904514723" expanded="true" signature="1559:2833" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="1675:1917" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="1799:1917" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="2078:2252" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="2275:2704" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="2323:2704" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="2894:3370" ph=" -&gt; ..." />
-            <marker date="1552904514723" expanded="true" signature="2925:3351" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="2951:3350" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="3041:3333" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="3074:3333" ph=" -&gt; ..." />
-            <marker date="1552904514723" expanded="true" signature="3240:3294" ph=" exn -&gt; ..." />
-            <marker date="1552904514723" expanded="true" signature="3500:3997" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="3517:3996" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="3541:3714" ph=" = { ..." />
-            <marker date="1552904514723" expanded="true" signature="3746:3952" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="3873:3952" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="4096:4900" ph=" = task { ..." />
-            <marker date="1552904514723" expanded="true" signature="4172:4801" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="4208:4801" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="4949:5121" ph=" = task { ..." />
-            <marker date="1552904514723" expanded="true" signature="5194:5829" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="5211:5828" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="5266:5666" ph="//            let res = session |&gt; Session.query&lt;EventRead&gt; |&gt; Queryable.filter &lt;@ fun x -&gt;  Option.toNullable(x.CorrelationId) = Nullable(corrId) @&gt; |&gt; Seq.toList ..." />
-            <marker date="1552904514723" expanded="true" signature="5893:6490" ph=" = task { ..." />
-            <marker date="1552904514723" expanded="true" signature="5967:6464" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="6004:6464" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="6550:6819" ph=" = task { ..." />
-            <marker date="1552904514723" expanded="true" signature="6698:6813" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="6873:7901" ph=" = ..." />
-            <marker date="1552904514723" expanded="true" signature="6981:7900" ph=" ..." />
-            <marker date="1552904514723" expanded="true" signature="7018:7223" ph=" pos event -&gt; task { ..." />
-            <marker date="1552904514723" expanded="true" signature="7261:7541" ph=" pos events -&gt; task { ..." />
-            <marker date="1552904514723" expanded="true" signature="7324:7527" ph=" then return [] ..." />
+            <marker date="1552904541935" expanded="true" signature="47:7935" ph=" = ..." />
+            <marker date="1552904541935" expanded="false" signature="59:222" ph="..." />
+            <marker date="1552904541935" expanded="true" signature="283:792" ph=" = function ..." />
+            <marker date="1552904541935" expanded="true" signature="367:547" ph=" -&gt; ..." />
+            <marker date="1552904541935" expanded="true" signature="592:792" ph=" -&gt; ..." />
+            <marker date="1552904541935" expanded="true" signature="921:1187" ph=" = { ..." />
+            <marker date="1552904541935" expanded="true" signature="1209:1353" ph="= { ..." />
+            <marker date="1552904541935" expanded="true" signature="1519:3380" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="1559:2833" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="1675:1917" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="1799:1917" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="2078:2252" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="2275:2704" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="2323:2704" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="2894:3370" ph=" -&gt; ..." />
+            <marker date="1552904541935" expanded="true" signature="2925:3351" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="2951:3350" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="3041:3333" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="3074:3333" ph=" -&gt; ..." />
+            <marker date="1552904541935" expanded="true" signature="3240:3294" ph=" exn -&gt; ..." />
+            <marker date="1552904541935" expanded="true" signature="3500:3997" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="3517:3996" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="3541:3714" ph=" = { ..." />
+            <marker date="1552904541935" expanded="true" signature="3746:3952" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="3873:3952" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="4096:4900" ph=" = task { ..." />
+            <marker date="1552904541935" expanded="true" signature="4172:4801" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="4208:4801" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="4949:5121" ph=" = task { ..." />
+            <marker date="1552904541935" expanded="true" signature="5194:5863" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="5211:5862" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="5266:5701" ph="//            let res = session |&gt; Session.query&lt;EventRead&gt; |&gt; Queryable.filter &lt;@ fun x -&gt;  Option.toNullable(x.CorrelationId) = Nullable(corrId) @&gt; |&gt; Seq.toList ..." />
+            <marker date="1552904541935" expanded="true" signature="5927:6524" ph=" = task { ..." />
+            <marker date="1552904541935" expanded="true" signature="6001:6498" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="6038:6498" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="6584:6853" ph=" = task { ..." />
+            <marker date="1552904541935" expanded="true" signature="6732:6847" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="6907:7935" ph=" = ..." />
+            <marker date="1552904541935" expanded="true" signature="7015:7934" ph=" ..." />
+            <marker date="1552904541935" expanded="true" signature="7052:7257" ph=" pos event -&gt; task { ..." />
+            <marker date="1552904541935" expanded="true" signature="7295:7575" ph=" pos events -&gt; task { ..." />
+            <marker date="1552904541935" expanded="true" signature="7358:7561" ph=" then return [] ..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/build.fsx">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="172">
+          <caret line="96" column="54" selection-start-line="96" selection-start-column="54" selection-end-line="96" selection-end-column="54" />
+          <folding>
+            <marker date="1552905069552" expanded="true" signature="3:71" ph="&quot;paket: groupref Build //&quot; ..." />
+            <marker date="1552905069552" expanded="false" signature="77:222" ph="..." />
+            <marker date="1552905069552" expanded="true" signature="237:283" ph=" = ..." />
+            <marker date="1552905069552" expanded="true" signature="403:553" ph="= { ..." />
+            <marker date="1552905069552" expanded="true" signature="594:989" ph=" =  ..." />
+            <marker date="1552905069552" expanded="true" signature="707:988" ph=" ..." />
+            <marker date="1552905069552" expanded="true" signature="1816:1973" ph=" -&gt;  ..." />
+            <marker date="1552905069552" expanded="true" signature="2276:2409" ph=" -&gt;  ..." />
+            <marker date="1552905069552" expanded="true" signature="2456:3543" ph=" = ..." />
+            <marker date="1552905069552" expanded="true" signature="2471:3358" ph=" =  ..." />
+            <marker date="1552905069552" expanded="true" signature="2484:3286" ph=" ..." />
+            <marker date="1552905069552" expanded="true" signature="3854:4011" ph=" -&gt;  ..." />
+            <marker date="1552905069552" expanded="true" signature="4057:4165" ph=" -&gt;  ..." />
           </folding>
         </state>
       </provider>

@@ -39,26 +39,31 @@ let createProject projectName tags desc =
 let cosmoStore = createProject "CosmoStore" "" "F# Event Store API definition (for storage provider specific implementations check CosmoStore.* packages)"
 let tableStorage = createProject "CosmoStore.TableStorage" "Azure TableStorage" "F# Event Store for Azure Table Storage"
 let cosmosDb = createProject "CosmoStore.CosmosDb" "Azure Cosmos DB" "F# Event Store for Azure Cosmos DB"
+let martenStore = createProject "CosmoStore.Marten" "Marten Postgresql Store" "F# Event Store for Marten Postgresql DB"
 
 // building projects
 Target.create "BuildCosmoStore" (fun _ -> cosmoStore.Src |> build)
 Target.create "BuildTableStorage" (fun _ -> tableStorage.Src |> build)
 Target.create "BuildCosmosDb" (fun _ -> cosmosDb.Src |> build)
+Target.create "BuildMartenStore" (fun _ -> martenStore.Src |> build)
 Target.create "BuildAll" (fun _ -> 
     [
         "BuildCosmoStore"
         "BuildTableStorage"
         "BuildCosmosDb"
+        "BuildMartenStore"
     ] |> List.iter (Target.runParallel 3)
 )
 
 // running tests
 Target.create "TestTableStorage" (fun _ -> run "-p tests/CosmoStore.TableStorage.Tests")
 Target.create "TestCosmosDb" (fun _ -> run "-p tests/CosmoStore.CosmosDb.Tests")
+Target.create "TestMartenStore" (fun _ -> run "-p tests/CosmoStore.Marten.Tests")
 Target.create "TestAll" (fun _ -> 
     [
         "TestTableStorage"
         "TestCosmosDb"
+        "TestMartenStore"
     ] 
     |> List.iter (Target.runParallel 2)
 )
@@ -89,11 +94,13 @@ let createNuget (project:Project) =
 Target.create "NugetCosmoStore" (fun _ -> cosmoStore |> createNuget)
 Target.create "NugetTableStorage" (fun _ -> tableStorage |> createNuget)
 Target.create "NugetCosmosDb" (fun _ -> cosmosDb |> createNuget)
+Target.create "NugetMartenStore" (fun _ -> martenStore |> createNuget)
 Target.create "NugetAll" (fun _ -> 
     [
         "NugetCosmoStore"
         "NugetTableStorage"
         "NugetCosmosDb"
+        "NugetMartenStore"
     ] |> List.iter (Target.runParallel 0)
 )    
 
@@ -107,6 +114,7 @@ Fake.Core.Target.create "Clean" (fun _ ->
 
 "Clean" ==> "TestTableStorage" ==> "NugetTableStorage"
 "Clean" ==> "TestCosmosDb" ==> "NugetCosmosDb"
+"Clean" ==> "TestMartenStore" ==> "NugetMartenStore"
 
 // start build
-Fake.Core.Target.runOrDefault "BuildAll"
+Fake.Core.Target.runOrDefaultWithArguments "BuildAll"
