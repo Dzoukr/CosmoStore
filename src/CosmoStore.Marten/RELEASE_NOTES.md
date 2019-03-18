@@ -1,2 +1,2 @@
-### 1.0.0 - August 20 2018
+### 0.0.1 - March 18 2019
 * Initial release with support for Postgres DB via Marten
