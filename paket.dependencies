@@ -27,6 +27,12 @@ group TableStorage
     storage: none
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
     nuget WindowsAzure.Storage !~> 9 lowest_matching: true
+    
+group Marten
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget TaskBuilder.fs
+    nuget Marten.FSharp
 
 group Tests
     source https://api.nuget.org/v3/index.json
