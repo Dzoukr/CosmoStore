@@ -6,12 +6,17 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="Library.fs" />
+      <Content Include="paket.references" />
+      <Content Include="RELEASE_NOTES.md" />
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="paket.references" />
-      <Content Include="RELEASE_NOTES.md" />
+      <ProjectReference Include="..\CosmoStore\CosmoStore.fsproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="MartenConf.fs" />
+      <Compile Include="EventStore.fs" />
     </ItemGroup>
     <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

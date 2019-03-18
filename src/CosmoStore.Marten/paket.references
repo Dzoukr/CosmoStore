@@ -1,3 +1,4 @@
 group Marten
+    FSharp.Core
     TaskBuilder.fs
     Marten.FSharp

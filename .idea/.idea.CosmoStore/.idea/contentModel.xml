@@ -3,6 +3,7 @@
   <component name="ContentModelStore">
     <e p="$USER_HOME$/Library/Caches/Rider2019.1/extResources" t="IncludeRecursive" />
     <e p="$USER_HOME$/Library/Caches/Rider2019.1/resharper-host/local/Transient/ReSharperHost/v191/SolutionCaches/_CosmoStore.-1257220729.00" t="ExcludeRecursive" />
+    <e p="$APPLICATION_CONFIG_DIR$/scratches" t="IncludeRecursive" />
     <e p="$PROJECT_DIR$" t="IncludeFlat">
       <e p="CosmoStore.sln" t="IncludeFlat" />
       <e p="packages" t="ExcludeRecursive" />
@@ -27,7 +28,8 @@
       <e p="src/CosmoStore.Marten" t="IncludeRecursive">
         <e p="bin" t="ExcludeRecursive" />
         <e p="CosmoStore.Marten.fsproj" t="IncludeRecursive" />
-        <e p="Library.fs" t="Include" />
+        <e p="EventStore.fs" t="Include" />
+        <e p="MartenConf.fs" t="Include" />
         <e p="obj" t="ExcludeRecursive" />
         <e p="paket.references" t="Include" />
         <e p="RELEASE_NOTES.md" t="Include" />
