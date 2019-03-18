@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="47042eea-8e78-41e7-b31e-beabc764ad33" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.CosmoStore/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.CosmoStore/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/CosmoStore.Marten/RELEASE_NOTES.md" beforeDir="false" afterPath="$PROJECT_DIR$/src/CosmoStore.Marten/RELEASE_NOTES.md" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -29,7 +30,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/CosmoStore.Marten/EventStore.fs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="508">
+            <state relative-caret-position="2265">
               <caret line="157" selection-start-line="157" selection-end-line="157" />
               <folding>
                 <marker date="1552904541935" expanded="true" signature="47:7935" ph=" = ..." />
@@ -82,7 +83,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/build.fsx">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="172">
+            <state relative-caret-position="1350">
               <caret line="96" column="54" selection-start-line="96" selection-start-column="54" selection-end-line="96" selection-end-column="54" />
               <folding>
                 <marker date="1552905069552" expanded="true" signature="3:71" ph="&quot;paket: groupref Build //&quot; ..." />
@@ -105,9 +106,12 @@
       </file>
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/CosmoStore.Marten/RELEASE_NOTES.md">
-          <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret column="25" selection-start-column="25" selection-end-column="25" />
+          <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+            <state split_layout="SPLIT">
+              <first_editor>
+                <caret column="5" selection-start-column="5" selection-end-column="5" />
+              </first_editor>
+              <second_editor />
             </state>
           </provider>
         </entry>
@@ -115,7 +119,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tests/CosmoStore.Marten.Tests/Program.fs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="464">
+            <state relative-caret-position="1590">
               <caret line="113" column="23" selection-start-line="113" selection-start-column="23" selection-end-line="113" selection-end-column="23" />
               <folding>
                 <marker date="1552898357411" expanded="true" signature="0:3212" ph="// Learn more about F## at http://fsharp.org ..." />
@@ -184,7 +188,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tests/CosmoStore.Tests/BasicTests.fs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="547">
+            <state relative-caret-position="2325">
               <caret line="160" column="9" selection-start-line="124" selection-end-line="160" selection-end-column="9" />
               <folding>
                 <marker date="1552903259000" expanded="true" signature="34:9668" ph=" ..." />
@@ -243,7 +247,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/CosmoStore/CosmoStore.fs">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="390">
+            <state relative-caret-position="735">
               <caret line="51" column="4" selection-start-line="51" selection-start-column="4" selection-end-line="51" selection-end-column="4" />
               <folding>
                 <marker date="1552879217064" expanded="false" signature="27:87" ph="..." />
@@ -428,7 +432,9 @@
       <updated>1552878549707</updated>
       <workItem from="1552878552169" duration="2010000" />
       <workItem from="1552883604520" duration="8591000" />
-      <workItem from="1552895171574" duration="6485000" />
+      <workItem from="1552895171574" duration="6519000" />
+      <workItem from="1552905735892" duration="14000" />
+      <workItem from="1552913211414" duration="21000" />
     </task>
     <task id="LOCAL-00001" summary="Merge remote-tracking branch 'upstream/master'&#10;&#10;# Conflicts:&#10;#&#9;build.fsx">
       <created>1552878979073</created>
@@ -441,7 +447,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="17086000" />
+    <option name="totallyTimeSpent" value="17155000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -456,7 +462,7 @@
     <frame x="1440" y="23" width="1920" height="1057" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2550586" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2603834" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -471,7 +477,7 @@
       <window_info anchor="bottom" id="Version Control" order="9" />
       <window_info anchor="bottom" id="Database Changes" order="10" />
       <window_info anchor="bottom" id="Unit Tests" order="11" />
-      <window_info anchor="bottom" id="Terminal" order="12" visible="true" weight="0.32953367" />
+      <window_info anchor="bottom" id="Terminal" order="12" visible="true" weight="0.21658032" />
       <window_info anchor="bottom" id="Event Log" order="13" side_tool="true" />
       <window_info anchor="bottom" id="Inspection Results" order="14" weight="0.32953367" />
       <window_info anchor="bottom" id="Build" order="15" weight="0.32953367" />
@@ -630,149 +636,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tests/CosmoStore.Marten.Tests/Program.fs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="464">
-          <caret line="113" column="23" selection-start-line="113" selection-start-column="23" selection-end-line="113" selection-end-column="23" />
-          <folding>
-            <marker date="1552898357411" expanded="true" signature="0:3212" ph="// Learn more about F## at http://fsharp.org ..." />
-            <marker date="1552898357411" expanded="false" signature="50:193" ph="..." />
-            <marker date="1552898357411" expanded="true" signature="232:387" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="428:547" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="586:868" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="914:1035" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="1062:1689" ph="superConn: NpgsqlConnectionStringBuilder, databaseName: string) = ..." />
-            <marker date="1552898357411" expanded="true" signature="1161:1337" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="1390:1528" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="1595:1689" ph=" with ..." />
-            <marker date="1552898357411" expanded="true" signature="1627:1689" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="1725:1857" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="1825:1857" ph=" then defaultVal ..." />
-            <marker date="1552898357411" expanded="true" signature="2190:2336" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="2212:2324" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="2226:2324" ph=" ..." />
-            <marker date="1552898357411" expanded="true" signature="2299:2324" ph=" e -&gt; ..." />
-            <marker date="1552898357411" expanded="true" signature="2445:2551" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="2453:2550" ph=" Expecto.Tests.defaultConfig with ..." />
-            <marker date="1552898357411" expanded="true" signature="2574:2627" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="2661:2778" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="2856:2892" ph="= { ..." />
-            <marker date="1552898357411" expanded="true" signature="2903:3032" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="2930:3031" ph=" ..." />
-            <marker date="1552898357411" expanded="true" signature="3060:3212" ph=" = ..." />
-            <marker date="1552898357411" expanded="true" signature="3070:3212" ph="  ..." />
-            <marker date="1552898357411" expanded="true" signature="3166:3212" ph=" ..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tests/CosmoStore.Tests/Issues.fs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="13" column="59" selection-start-line="13" selection-start-column="59" selection-end-line="13" selection-end-column="59" />
-          <folding>
-            <marker date="1552898393649" expanded="true" signature="30:814" ph=" ..." />
-            <marker date="1552898393649" expanded="false" signature="37:111" ph="..." />
-            <marker date="1552898393649" expanded="true" signature="149:814" ph=" =  ..." />
-            <marker date="1552898393649" expanded="true" signature="158:813" ph=" ..." />
-            <marker date="1552898393649" expanded="true" signature="224:474" ph=" ..." />
-            <marker date="1552898393649" expanded="true" signature="551:806" ph=" ..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/CosmoStore/CosmoStore.fs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="390">
-          <caret line="51" column="4" selection-start-line="51" selection-start-column="4" selection-end-line="51" selection-end-column="4" />
-          <folding>
-            <marker date="1552879217064" expanded="false" signature="27:87" ph="..." />
-            <marker date="1552879217064" expanded="true" signature="111:158" ph="= ..." />
-            <marker date="1552879217064" expanded="true" signature="117:158" ph="| Any ..." />
-            <marker date="1552879217064" expanded="true" signature="181:313" ph="= ..." />
-            <marker date="1552879217064" expanded="true" signature="187:313" ph="| AllEvents ..." />
-            <marker date="1552879217064" expanded="true" signature="338:433" ph="= ..." />
-            <marker date="1552879217064" expanded="true" signature="344:433" ph="| AllStreams ..." />
-            <marker date="1552879217064" expanded="true" signature="450:664" ph="= { ..." />
-            <marker date="1552879217064" expanded="true" signature="682:828" ph="= { ..." />
-            <marker date="1552879217064" expanded="true" signature="842:917" ph="= { ..." />
-            <marker date="1552879217064" expanded="true" signature="935:1421" ph="= { ..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tests/CosmoStore.Tests/AllTests.fs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="5" selection-start-line="9" selection-start-column="5" selection-end-line="9" selection-end-column="5" />
-          <folding>
-            <marker date="1552898438370" expanded="true" signature="32:303" ph=" ..." />
-            <marker date="1552898438370" expanded="true" signature="72:303" ph=" = ..." />
-            <marker date="1552898438370" expanded="true" signature="94:302" ph=" ..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tests/CosmoStore.Tests/BasicTests.fs">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="547">
-          <caret line="160" column="9" selection-start-line="124" selection-end-line="160" selection-end-column="9" />
-          <folding>
-            <marker date="1552903259000" expanded="true" signature="34:9668" ph=" ..." />
-            <marker date="1552903259000" expanded="false" signature="41:143" ph="..." />
-            <marker date="1552903259000" expanded="true" signature="268:6608" ph=" =  ..." />
-            <marker date="1552903259000" expanded="true" signature="295:6607" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="348:833" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="433:655" ph=" = async { ..." />
-            <marker date="1552903259000" expanded="true" signature="460:641" ph="return!  ..." />
-            <marker date="1552903259000" expanded="true" signature="844:1084" ph="// testTask &quot;Store same event twice&quot; { ..." />
-            <marker date="1552903259000" expanded="true" signature="1120:1280" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="1317:1559" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="1601:1876" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="1916:2225" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="2275:2593" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="2649:2965" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="3024:3388" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="3448:3963" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="3482:3831" ph=" -&gt;  ..." />
-            <marker date="1552903259000" expanded="true" signature="3853:3940" ph=" -&gt;  ..." />
-            <marker date="1552903259000" expanded="true" signature="4049:4557" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="4083:4429" ph=" -&gt;  ..." />
-            <marker date="1552903259000" expanded="true" signature="4451:4534" ph=" -&gt;  ..." />
-            <marker date="1552903259000" expanded="true" signature="4632:5065" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="5127:5723" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="5309:5445" ph=" -&gt;  ..." />
-            <marker date="1552903259000" expanded="true" signature="5780:6601" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="5822:6031" ph=" = ..." />
-            <marker date="1552903259000" expanded="true" signature="6097:6159" ph="for i in 1..3 do ..." />
-            <marker date="1552903259000" expanded="true" signature="6234:6305" ph="for i in 1..3 do ..." />
-            <marker date="1552903259000" expanded="true" signature="6659:8037" ph=" = ..." />
-            <marker date="1552903259000" expanded="true" signature="6686:8019" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="6734:7350" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="6827:6974" ph=" = ..." />
-            <marker date="1552903259000" expanded="true" signature="7000:7055" ph="for i in 1..3 do ..." />
-            <marker date="1552903259000" expanded="true" signature="7406:8013" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="7563:7717" ph=" = ..." />
-            <marker date="1552903259000" expanded="true" signature="7743:7798" ph="for i in 1..3 do ..." />
-            <marker date="1552903259000" expanded="true" signature="8079:9569" ph=" = ..." />
-            <marker date="1552903259000" expanded="true" signature="8106:9568" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="8159:8607" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="8250:8375" ph=" = ..." />
-            <marker date="1552903259000" expanded="true" signature="8401:8456" ph="for i in 1..3 do ..." />
-            <marker date="1552903259000" expanded="true" signature="8661:9172" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="8752:8878" ph=" = ..." />
-            <marker date="1552903259000" expanded="true" signature="8904:8959" ph="for i in 1..3 do ..." />
-            <marker date="1552903259000" expanded="true" signature="9206:9562" ph=" ..." />
-            <marker date="1552903259000" expanded="true" signature="9298:9419" ph=" [1..10] ..." />
-            <marker date="1552903259000" expanded="true" signature="9583:9668" ph=" = ..." />
-            <marker date="1552903259000" expanded="true" signature="9591:9667" ph=" ..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/CosmoStore.Marten/EventStore.fs">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="508">
+        <state relative-caret-position="2265">
           <caret line="157" selection-start-line="157" selection-end-line="157" />
           <folding>
             <marker date="1552904541935" expanded="true" signature="47:7935" ph=" = ..." />
@@ -823,7 +689,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/build.fsx">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="172">
+        <state relative-caret-position="1350">
           <caret line="96" column="54" selection-start-line="96" selection-start-column="54" selection-end-line="96" selection-end-column="54" />
           <folding>
             <marker date="1552905069552" expanded="true" signature="3:71" ph="&quot;paket: groupref Build //&quot; ..." />
@@ -843,10 +709,147 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/CosmoStore.Marten/RELEASE_NOTES.md">
+    <entry file="file://$PROJECT_DIR$/tests/CosmoStore.Marten.Tests/Program.fs">
       <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1590">
+          <caret line="113" column="23" selection-start-line="113" selection-start-column="23" selection-end-line="113" selection-end-column="23" />
+          <folding>
+            <marker date="1552898357411" expanded="false" signature="50:193" ph="..." />
+            <marker date="1552898357411" expanded="true" signature="232:387" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="428:547" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="586:868" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="914:1035" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="1062:1689" ph="superConn: NpgsqlConnectionStringBuilder, databaseName: string) = ..." />
+            <marker date="1552898357411" expanded="true" signature="1161:1337" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="1390:1528" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="1595:1689" ph=" with ..." />
+            <marker date="1552898357411" expanded="true" signature="1627:1689" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="1725:1857" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="1825:1857" ph=" then defaultVal ..." />
+            <marker date="1552898357411" expanded="true" signature="2190:2336" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="2212:2324" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="2226:2324" ph=" ..." />
+            <marker date="1552898357411" expanded="true" signature="2299:2324" ph=" e -&gt; ..." />
+            <marker date="1552898357411" expanded="true" signature="2445:2551" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="2453:2550" ph=" Expecto.Tests.defaultConfig with ..." />
+            <marker date="1552898357411" expanded="true" signature="2574:2627" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="2661:2778" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="2856:2892" ph="= { ..." />
+            <marker date="1552898357411" expanded="true" signature="2903:3032" ph=" = ..." />
+            <marker date="1552898357411" expanded="true" signature="2930:3031" ph=" ..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/CosmoStore.Tests/AllTests.fs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="9" column="5" selection-start-line="9" selection-start-column="5" selection-end-line="9" selection-end-column="5" />
+          <folding>
+            <marker date="1552898438370" expanded="true" signature="94:302" ph=" ..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/CosmoStore.Tests/Issues.fs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="13" column="59" selection-start-line="13" selection-start-column="59" selection-end-line="13" selection-end-column="59" />
+          <folding>
+            <marker date="1552898393649" expanded="false" signature="37:111" ph="..." />
+            <marker date="1552898393649" expanded="true" signature="158:813" ph=" ..." />
+            <marker date="1552898393649" expanded="true" signature="224:474" ph=" ..." />
+            <marker date="1552898393649" expanded="true" signature="551:806" ph=" ..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/CosmoStore.Tests/BasicTests.fs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2325">
+          <caret line="160" column="9" selection-start-line="124" selection-end-line="160" selection-end-column="9" />
+          <folding>
+            <marker date="1552903259000" expanded="false" signature="41:143" ph="..." />
+            <marker date="1552903259000" expanded="true" signature="268:6608" ph=" =  ..." />
+            <marker date="1552903259000" expanded="true" signature="295:6607" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="348:833" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="433:655" ph=" = async { ..." />
+            <marker date="1552903259000" expanded="true" signature="460:641" ph="return!  ..." />
+            <marker date="1552903259000" expanded="true" signature="844:1084" ph="// testTask &quot;Store same event twice&quot; { ..." />
+            <marker date="1552903259000" expanded="true" signature="1120:1280" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="1317:1559" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="1601:1876" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="1916:2225" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="2275:2593" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="2649:2965" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="3024:3388" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="3448:3963" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="3482:3831" ph=" -&gt;  ..." />
+            <marker date="1552903259000" expanded="true" signature="3853:3940" ph=" -&gt;  ..." />
+            <marker date="1552903259000" expanded="true" signature="4049:4557" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="4083:4429" ph=" -&gt;  ..." />
+            <marker date="1552903259000" expanded="true" signature="4451:4534" ph=" -&gt;  ..." />
+            <marker date="1552903259000" expanded="true" signature="4632:5065" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="5127:5723" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="5309:5445" ph=" -&gt;  ..." />
+            <marker date="1552903259000" expanded="true" signature="5780:6601" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="5822:6031" ph=" = ..." />
+            <marker date="1552903259000" expanded="true" signature="6097:6159" ph="for i in 1..3 do ..." />
+            <marker date="1552903259000" expanded="true" signature="6234:6305" ph="for i in 1..3 do ..." />
+            <marker date="1552903259000" expanded="true" signature="6659:8037" ph=" = ..." />
+            <marker date="1552903259000" expanded="true" signature="6686:8019" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="6734:7350" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="6827:6974" ph=" = ..." />
+            <marker date="1552903259000" expanded="true" signature="7000:7055" ph="for i in 1..3 do ..." />
+            <marker date="1552903259000" expanded="true" signature="7406:8013" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="7563:7717" ph=" = ..." />
+            <marker date="1552903259000" expanded="true" signature="7743:7798" ph="for i in 1..3 do ..." />
+            <marker date="1552903259000" expanded="true" signature="8079:9569" ph=" = ..." />
+            <marker date="1552903259000" expanded="true" signature="8106:9568" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="8159:8607" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="8250:8375" ph=" = ..." />
+            <marker date="1552903259000" expanded="true" signature="8401:8456" ph="for i in 1..3 do ..." />
+            <marker date="1552903259000" expanded="true" signature="8661:9172" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="8752:8878" ph=" = ..." />
+            <marker date="1552903259000" expanded="true" signature="8904:8959" ph="for i in 1..3 do ..." />
+            <marker date="1552903259000" expanded="true" signature="9206:9562" ph=" ..." />
+            <marker date="1552903259000" expanded="true" signature="9298:9419" ph=" [1..10] ..." />
+            <marker date="1552903259000" expanded="true" signature="9591:9667" ph=" ..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/CosmoStore/CosmoStore.fs">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="735">
+          <caret line="51" column="4" selection-start-line="51" selection-start-column="4" selection-end-line="51" selection-end-column="4" />
+          <folding>
+            <marker date="1552879217064" expanded="false" signature="27:87" ph="..." />
+            <marker date="1552879217064" expanded="true" signature="111:158" ph="= ..." />
+            <marker date="1552879217064" expanded="true" signature="117:158" ph="| Any ..." />
+            <marker date="1552879217064" expanded="true" signature="181:313" ph="= ..." />
+            <marker date="1552879217064" expanded="true" signature="187:313" ph="| AllEvents ..." />
+            <marker date="1552879217064" expanded="true" signature="338:433" ph="= ..." />
+            <marker date="1552879217064" expanded="true" signature="344:433" ph="| AllStreams ..." />
+            <marker date="1552879217064" expanded="true" signature="450:664" ph="= { ..." />
+            <marker date="1552879217064" expanded="true" signature="682:828" ph="= { ..." />
+            <marker date="1552879217064" expanded="true" signature="842:917" ph="= { ..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/CosmoStore.Marten/RELEASE_NOTES.md">
+      <provider editor-type-id="text-editor">
         <state>
           <caret column="25" selection-start-column="25" selection-end-column="25" />
+        </state>
+      </provider>
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor>
+            <caret column="5" selection-start-column="5" selection-end-column="5" />
+          </first_editor>
+          <second_editor />
         </state>
       </provider>
     </entry>
