@@ -1,4 +1,5 @@
 namespace CosmoStore.Marten
+open Npgsql
 
 
 module EventStore =
@@ -142,7 +143,7 @@ module EventStore =
             | Contains c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.Contains(c) @> |> Seq.toList
             | EndsWith c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.EndsWith(c) @> |> Seq.toList
             | StartsWith c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.StartsWith(c) @> |> Seq.toList
-        return res
+        return (res |> List.sortBy(fun x -> x.Id))
      }
 
     let private getStream (store: IDocumentStore) streamId = task {
@@ -153,8 +154,19 @@ module EventStore =
         | None -> return failwithf "SessionId %s is not present in database" streamId
     }
 
-    let getEventStore (configuration: Configuration) =
-        let store = configuration.MartenStore
+    let createConnString host user pass database =
+        sprintf "Host=%s;Username=%s;Password=%s;Database=%s" host user pass database
+        |> NpgsqlConnectionStringBuilder
+    
+    let userConnStr(conf) = createConnString (conf.Host) (conf.Username) (conf.Password) (conf.Database)
+    
+    let getEventStore (conf:  Configuration) =
+        
+        
+        let store =
+            userConnStr conf
+            |> string
+            |> DocumentStore.For
 
         let eventAppended = Event<EventRead>()
 
