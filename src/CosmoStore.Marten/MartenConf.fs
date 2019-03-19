@@ -1,8 +1,10 @@
 namespace CosmoStore.Marten
-open Marten
 
 type Configuration = {
-    MartenStore : IDocumentStore
+    Host: string
+    Database: string
+    Username: string
+    Password: string
 }
 
         
