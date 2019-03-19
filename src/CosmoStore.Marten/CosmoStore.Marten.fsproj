@@ -3,6 +3,7 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
+        <Authors>Roman Provazník;Kunjan Dalal</Authors>
     </PropertyGroup>
 
     <ItemGroup>

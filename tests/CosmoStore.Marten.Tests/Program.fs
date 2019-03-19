@@ -1,5 +1,4 @@
-﻿// Learn more about F# at http://fsharp.org
-
+﻿
 open CosmoStore.Marten
 open CosmoStore.Marten
 open CosmoStore.Tests
@@ -9,7 +8,6 @@ open Marten
 open System
 open Npgsql
 open CosmoStore.Marten.EventStore
-
 
 
 let execNonQuery connStr commandStr =
@@ -36,9 +34,6 @@ let dropDatabase connStr databaseName =
     |> sprintf "DROP database \"%s\""
     |> execNonQuery connStr
     |> ignore
-
-
-
 
 type DisposableDatabase private (superConn: NpgsqlConnectionStringBuilder, databaseName: string, conf : Configuration) =
     static member Create(conf) =
@@ -85,18 +80,6 @@ let private getCleanEventStore () =
     getEventStore database.Conf
 
 let cfg() = Domain.defaultTestConfiguration getCleanEventStore
-
-type Person = {
-    Id : int
-    Name : string
-}
-
-let tests =
-  test "A simple test" {
-    let subject = "Hello World"
-    Expect.equal subject "Hello World" "The strings should equal"
-  }
-
 
 [<EntryPoint>]
 let main _ =

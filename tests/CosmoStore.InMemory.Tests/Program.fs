@@ -19,7 +19,7 @@ let cfg() =  Domain.defaultTestConfiguration getCleanEventStore
 [<EntryPoint>]
 let main _ =
     try 
-        (cfg(), "Marten")
+        (cfg(), "InMemory")
         |> AllTests.getTests
         |> runTests testConfig
     with

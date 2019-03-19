@@ -1,4 +1,4 @@
-#r "paket: groupref Build //"
+﻿#r "paket: groupref Build //"
 
 #load ".fake/build.fsx/intellisense.fsx"
 open Fake
@@ -88,7 +88,6 @@ let createNuget (project:Project) =
             "PackageIconUrl=\"https://raw.githubusercontent.com/Dzoukr/CosmoStore/master/logo.png\""
             sprintf "PackageTags=\"%s\"" project.Tags
             "Copyright=\"Roman Provazník - 2019\""
-            "Authors=\"Roman Provazník\""
         ] 
         |> List.map (fun x -> "/p:" + x)
         |> String.concat " "
@@ -122,7 +121,7 @@ Fake.Core.Target.create "Clean" (fun _ ->
 "Clean" ==> "TestTableStorage" ==> "NugetTableStorage"
 "Clean" ==> "TestCosmosDb" ==> "NugetCosmosDb"
 "Clean" ==> "TestMartenStore" ==> "NugetMartenStore"
-"Clean" ==> "TestInMemoryStore" ==> "NugetMartenStore"
+"Clean" ==> "TestInMemoryStore" ==> "NugetInMemoryStore"
 
 // start build
 Fake.Core.Target.runOrDefaultWithArguments "BuildAll"
