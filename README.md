@@ -4,7 +4,7 @@
 <img src="https://github.com/Dzoukr/CosmoStore/raw/master/logo.png" width="150px"/>
 </p>
 
-F# Event Store library for various storage providers (Cosmos DB, Table Storage)
+F# Event Store library for various storage providers (Cosmos DB, Table Storage, Marten, InMemory)
 
 ## Features
 - Storage agnostic F# API
@@ -17,11 +17,13 @@ F# Event Store library for various storage providers (Cosmos DB, Table Storage)
 
 ## Available storage providers
 
-| Storage Provider  | Package | Version |
-|---|---|---|
-| none (API definition only) | CosmoStore | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.svg?style=flat)](https://www.nuget.org/packages/CosmoStore/) |
-| Azure Cosmos DB | CosmoStore.CosmosDb  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.CosmosDb.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.CosmosDb/) |
-| Azure Table Storage | CosmoStore.TableStorage  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.TableStorage.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.TableStorage/) |
+| Storage Provider  | Package | Version | Author
+|---|---|---|---|
+| none (API definition only) | CosmoStore | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.svg?style=flat)](https://www.nuget.org/packages/CosmoStore/) | @dzoukr |
+| Azure Cosmos DB | CosmoStore.CosmosDb  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.CosmosDb.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.CosmosDb/) |@dzoukr |
+| Azure Table Storage | CosmoStore.TableStorage  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.TableStorage.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.TableStorage/) | @dzoukr |
+| Marten (Postgres) | CosmoStore.Marten  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.Marten.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.Marten/) | @kunjee
+| InMemory | CosmoStore.InMemory  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.InMemory.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.InMemory/) | @kunjee
 
 
 ## Breaking changes from versions < 2
