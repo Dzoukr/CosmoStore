@@ -1,13 +1,12 @@
 namespace CosmoStore.Marten
 open Npgsql
 
-
 module EventStore =
     open System
     open Marten
     open System.Linq
     open CosmoStore
-    open FSharp.Control.Tasks.V2
+    open FSharp.Control.Tasks.V2.ContextInsensitive
     open System.Reactive.Linq
     open System.Reactive.Concurrency
 
@@ -47,14 +46,17 @@ module EventStore =
     type StreamMessage = Data of StreamData * AsyncReplyChannel<AgentResponse>
 
     let agent =
-            let processEvents message =
+            let processEvents message = task {
                 use session = message.Store.LightweightSession()
-                let lastPosition, metadataEntity =
-                    let res = session |> Session.loadByString<Stream> message.StreamId
-                    match res with
-                    | Some r ->
-                        r.LastPosition, Some r
-                    | None -> 0L, None
+                let! lastPosition, metadataEntity = 
+                    task {
+                        let! res = session |> Session.loadByStringTask<Stream> message.StreamId
+                        match res with
+                        | Some r ->
+                            return r.LastPosition, Some r
+                        | None -> 
+                            return 0L, None
+                    }
 
                 let nextPos = lastPosition + 1L
 
@@ -72,8 +74,9 @@ module EventStore =
                         session.Store<Stream>({ Id = message.StreamId; LastPosition = (int64 message.EventWrites.Length); LastUpdatedUtc = DateTime.UtcNow })
 
                 let _ = session.Store<EventRead>(ops |> List.toArray)
-                session.SaveChanges()
-                ops
+                do! session |> Session.saveChangesTask
+                return ops
+            }
 
             MailboxProcessor<StreamMessage>.Start(fun inbox ->
 
@@ -83,7 +86,7 @@ module EventStore =
                     match message with
                     | Data(m, r) ->
                         try
-                            let ops = processEvents m
+                            let! ops = processEvents m |> Async.AwaitTask
                             r.Reply(EventReads ops)
                         with exn ->
                             r.Reply(Error exn)
@@ -100,22 +103,26 @@ module EventStore =
                 ExpectedPosition = expectedPosition
                 EventWrites = events
             }
-            let getEventReads() =
-                let res = agent.PostAndReply(fun replyChannel -> Data(message, replyChannel))
-                match res with
-                | EventReads ers -> ers
-                | Error ex -> raise ex
-            return getEventReads()
+            let getEventReads() = task {
+                let! res = agent.PostAndAsyncReply(fun replyChannel -> Data(message, replyChannel))
+                return
+                    match res with
+                    | EventReads ers -> ers
+                    | Error ex -> raise ex
+            }
+            return! getEventReads()
         }
     let private getEvents (store: IDocumentStore) (streamId: string) (eventsRead: EventsReadRange) = task {
         use session = store.LightweightSession()
-        let fetch =
+        let! fetch =
             match eventsRead with
-            | AllEvents -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId @>
+            | AllEvents -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId @> 
             | FromPosition f -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position >= f @>
             | ToPosition t -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position > 0L && x.Position <= t @>
             | PositionRange(f, t) -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position >= f && x.Position <= t @>
-        let res = fetch |> Seq.sortBy (fun x -> x.Position) |> Seq.toList
+            |> Queryable.orderBy <@ fun x -> x.Position @>
+            |> Queryable.toListTask
+        let res = fetch |> Seq.toList
         return res
     }
     let private getEvent store streamId position = task {
@@ -137,18 +144,21 @@ module EventStore =
 
     let private getStreams (store: IDocumentStore) streamsRead = task {
         use session = store.LightweightSession()
-        let res =
+        let! res =
             match streamsRead with
-            | AllStreams -> session |> Session.query<Stream> |> Seq.toList
-            | Contains c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.Contains(c) @> |> Seq.toList
-            | EndsWith c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.EndsWith(c) @> |> Seq.toList
-            | StartsWith c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.StartsWith(c) @> |> Seq.toList
-        return (res |> List.sortBy(fun x -> x.Id))
+            | AllStreams -> session |> Session.query<Stream> :> IQueryable<_>
+            | Contains c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.Contains(c) @> 
+            | EndsWith c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.EndsWith(c) @> 
+            | StartsWith c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.StartsWith(c) @> 
+            |> Queryable.orderBy <@ fun x -> x.Id @>  
+            |> Queryable.toListTask
+            
+        return (res |> Seq.toList)
      }
 
     let private getStream (store: IDocumentStore) streamId = task {
         use session = store.LightweightSession()
-        let res = session |> Session.loadByString<Stream> streamId
+        let! res = session |> Session.loadByStringTask<Stream> streamId
         match res with
         | Some r -> return r
         | None -> return failwithf "SessionId %s is not present in database" streamId
@@ -161,15 +171,12 @@ module EventStore =
     let userConnStr(conf) = createConnString (conf.Host) (conf.Username) (conf.Password) (conf.Database)
     
     let getEventStore (conf:  Configuration) =
-        
-        
         let store =
             userConnStr conf
             |> string
             |> DocumentStore.For
 
         let eventAppended = Event<EventRead>()
-
 
         {
             AppendEvent = fun stream pos event -> task {
