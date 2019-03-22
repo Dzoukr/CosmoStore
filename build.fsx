@@ -12,7 +12,12 @@ open Fake.IO.FileSystemOperators
 module Target =
     let runParallel n t = Target.run n t []   
 
-let run par = par |> DotNet.exec id "run" |> ignore
+let assertProcessResult (p : ProcessResult) =
+    if not p.OK then
+        p.Errors
+        |> Seq.iter(Trace.traceError)
+        failwithf "Failed with exitcode: %d" p.ExitCode
+let run par = par |> DotNet.exec id "run" |> assertProcessResult
 let build par = par |> DotNet.build id |> ignore
 
 type Project = {
