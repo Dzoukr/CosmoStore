@@ -1,5 +1,7 @@
 namespace CosmoStore.Marten
 open Npgsql
+open Newtonsoft.Json
+open Newtonsoft.Json.FSharp.Idiomatic
 
 module EventStore =
     open System
@@ -130,16 +132,28 @@ module EventStore =
         let! events = getEvents store streamId filter
         return events.Head
     }
+    open Microsoft.FSharp.Quotations.Patterns
+    
+    let rec private propertyName quotation =
+        match quotation with
+        | PropertyGet (_,propertyInfo,_) -> propertyInfo.Name
+        | Lambda (_,expr) -> propertyName expr
+        | _ -> ""
 
-    let private getEventsByCorrelationId (store: IDocumentStore) corrId =
+    // Get a type safe name in case this changes somehow
+    let private correlationIdPropName = propertyName <@ fun (x : EventRead) -> x.CorrelationId @>
+
+    let private getEventsByCorrelationIdQuery = sprintf "where data->>'%s' = ?" correlationIdPropName
+
+    let private getEventsByCorrelationId (store: IDocumentStore) (corrId : Guid) =
         task {
             use session = store.LightweightSession()
+            
+            let! res = 
+                session
+                |> Session.sqlTask<EventRead> getEventsByCorrelationIdQuery [| box (corrId.ToString()) |]
 
-//            let res = session |> Session.query<EventRead> |> Queryable.filter <@ fun x ->  Option.toNullable(x.CorrelationId) = Nullable(corrId) @> |> Seq.toList
-//TODO: Option is type is not supported by store. So, it is better to convert option type to Nullable and then put a guard on that.
-//TODO: remove this not optimized filter once things converted to nullable. Then above code can be used. Until then don't use in production
-            let res = session |> Session.query<EventRead> |> Seq.filter (fun x -> x.CorrelationId = Some corrId) |> Seq.toList
-            return (res)
+            return res |> Seq.toList
         }
 
     let private getStreams (store: IDocumentStore) streamsRead = task {
@@ -154,7 +168,7 @@ module EventStore =
             |> Queryable.toListTask
             
         return (res |> Seq.toList)
-     }
+    }
 
     let private getStream (store: IDocumentStore) streamId = task {
         use session = store.LightweightSession()
@@ -170,11 +184,27 @@ module EventStore =
     
     let userConnStr(conf) = createConnString (conf.Host) (conf.Username) (conf.Password) (conf.Database)
     
+    let converters: JsonConverter [] = [|
+        OptionConverter()
+        SingleCaseDuConverter()
+        MultiCaseDuConverter()
+    |]
+
+    let martenSerializer =
+        // Need to tell marten to use enums as strings or we have to teach npgsql about our enums when using parameters
+        let s = Services.JsonNetSerializer(EnumStorage = EnumStorage.AsString)
+
+        for c in converters do
+            s.Customize(fun s -> s.Converters.Add(c))
+        s
+
     let getEventStore (conf:  Configuration) =
         let store =
-            userConnStr conf
-            |> string
-            |> DocumentStore.For
+            Marten.DocumentStore.For(
+                fun ds ->
+                    ds.Connection(userConnStr conf |> string) |> ignore
+                    ds.Serializer(martenSerializer) |> ignore
+            )
 
         let eventAppended = Event<EventRead>()
 
