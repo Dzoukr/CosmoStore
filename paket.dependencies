@@ -34,6 +34,7 @@ group Marten
     nuget TaskBuilder.fs
     nuget FSharp.Core >= 4.3.4 < 4.5.4
     nuget Marten.FSharp
+    github baronfel/Newtonsoft.Json.FSharp.Idiomatic src/Newtonsoft.Json.FSharp.Idiomatic/Newtonsoft.Json.FSharp.Idiomatic.fs 
     
 group InMemory
     source https://api.nuget.org/v3/index.json

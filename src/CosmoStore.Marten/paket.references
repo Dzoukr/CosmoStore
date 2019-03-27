@@ -2,3 +2,4 @@ group Marten
     FSharp.Core
     TaskBuilder.fs
     Marten.FSharp
+    File: Newtonsoft.Json.FSharp.Idiomatic.fs
