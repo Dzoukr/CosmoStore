@@ -5,6 +5,7 @@ open Microsoft.Azure.Documents
 open Microsoft.Azure.Documents.Client
 open FSharp.Control.Tasks.V2
 open CosmoStore
+open CosmoStore.Helper
 open System.Reflection
 open System.IO
 open CosmoStore.CosmosDb
@@ -76,7 +77,7 @@ let private appendEvents getOpts (client:DocumentClient) (storedProcUri:Uri) (st
         return resp.Response 
         |> List.map toPositionAndDate 
         |> List.zip events
-        |> List.map (fun (evn,(pos,created)) -> Conversion.eventWriteToEventRead streamId pos created evn)
+        |> List.map (fun (evn,(pos,created)) -> eventWriteToEventRead streamId pos created evn)
     }
 
 let private streamsReadToQuery = function

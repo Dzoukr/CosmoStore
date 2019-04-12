@@ -4,6 +4,7 @@ open System
 open Microsoft.WindowsAzure.Storage
 open Microsoft.WindowsAzure.Storage.Table
 open CosmoStore
+open CosmoStore.Helper
 open FSharp.Control.Tasks.V2
 open CosmoStore.TableStorage
 open System.Reactive.Linq
@@ -20,14 +21,6 @@ let private tryGetStreamMetadata (table:CloudTable) (streamId:string) =
             return (entity, entity |> Conversion.entityToStream) |> Some
     }
 
-let private validatePosition streamId (nextPos:int64) = function
-    | ExpectedPosition.Any -> ()
-    | ExpectedPosition.NoStream -> 
-        if nextPos > 1L then 
-            failwithf "ESERROR_POSITION_STREAMEXISTS: Stream '%s' was expected to be empty, but contains %i events" streamId (nextPos - 1L)
-    | ExpectedPosition.Exact expectedPos ->
-        if nextPos <> expectedPos then
-            failwithf "ESERROR_POSITION_POSITIONNOTMATCH: Stream '%s' was expected to have next position %i, but has %i" streamId expectedPos nextPos
 
 let private appendEvents (table:CloudTable) (streamId:string) (expectedPosition:ExpectedPosition) (events:EventWrite list) =
     
