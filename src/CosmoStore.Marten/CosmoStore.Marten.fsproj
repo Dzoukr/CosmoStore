@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Roman Provazník;Kunjan Dalal</Authors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\paket-files\marten\baronfel\Newtonsoft.Json.FSharp.Idiomatic\src\Newtonsoft.Json.FSharp.Idiomatic\Newtonsoft.Json.FSharp.Idiomatic.fs">
+      <Paket>True</Paket>
+      <Link>paket-files/Newtonsoft.Json.FSharp.Idiomatic.fs</Link>
+    </Compile>
+    <Content Include="paket.references" />
+    <Content Include="RELEASE_NOTES.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CosmoStore\CosmoStore.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="MartenConf.fs" />
+    <Compile Include="EventStore.fs" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>

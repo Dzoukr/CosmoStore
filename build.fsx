@@ -1,4 +1,4 @@
-#r "paket: groupref Build //"
+﻿#r "paket: groupref Build //"
 
 #load ".fake/build.fsx/intellisense.fsx"
 open Fake
@@ -10,9 +10,14 @@ open Fake.DotNet
 open Fake.IO.FileSystemOperators
 
 module Target =
-    let runParallel n t = Target.run n t []
+    let runParallel n t = Target.run n t []   
 
-let run par = par |> DotNet.exec id "run" |> ignore
+let assertProcessResult (p : ProcessResult) =
+    if not p.OK then
+        p.Errors
+        |> Seq.iter(Trace.traceError)
+        failwithf "Failed with exitcode: %d" p.ExitCode
+let run par = par |> DotNet.exec id "run" |> assertProcessResult
 let build par = par |> DotNet.build id |> ignore
 
 type Project = {
@@ -24,7 +29,7 @@ type Project = {
     Description : string
 }
 
-let createProject projectName tags desc =
+let createProject projectName tags desc = 
     let src = "./src" |> Fake.IO.Path.getFullName
     let tests = "./tests" |> Fake.IO.Path.getFullName
     {
@@ -39,38 +44,43 @@ let createProject projectName tags desc =
 let cosmoStore = createProject "CosmoStore" "" "F# Event Store API definition (for storage provider specific implementations check CosmoStore.* packages)"
 let tableStorage = createProject "CosmoStore.TableStorage" "Azure TableStorage" "F# Event Store for Azure Table Storage"
 let cosmosDb = createProject "CosmoStore.CosmosDb" "Azure Cosmos DB" "F# Event Store for Azure Cosmos DB"
-let liteDB = createProject "CosmoStore.LiteDB" "Lite DB Storage" "F# Event Store for Lite DB"
+let martenStore = createProject "CosmoStore.Marten" "Marten Postgresql Store" "F# Event Store for Marten Postgresql DB"
+let inMemoryStore = createProject "CosmoStore.InMemory" "In Memory Store" "F# Event Store for In Memory Concurrent Dictionary"
 
 // building projects
 Target.create "BuildCosmoStore" (fun _ -> cosmoStore.Src |> build)
 Target.create "BuildTableStorage" (fun _ -> tableStorage.Src |> build)
 Target.create "BuildCosmosDb" (fun _ -> cosmosDb.Src |> build)
-Target.create "BuildLiteDb" (fun _ -> liteDB.Src |> build)
-Target.create "BuildAll" (fun _ ->
+Target.create "BuildMartenStore" (fun _ -> martenStore.Src |> build)
+Target.create "BuildInMemoryStore" (fun _ -> inMemoryStore.Src |> build)
+Target.create "BuildAll" (fun _ -> 
     [
         "BuildCosmoStore"
         "BuildTableStorage"
         "BuildCosmosDb"
-        "BuildLiteDB"
-    ] |> List.iter (Target.runParallel 4)
+        "BuildMartenStore"
+        "BuildInMemoryStore"
+    ] |> List.iter (Target.runParallel 3)
 )
 
 // running tests
 Target.create "TestTableStorage" (fun _ -> run "-p tests/CosmoStore.TableStorage.Tests")
 Target.create "TestCosmosDb" (fun _ -> run "-p tests/CosmoStore.CosmosDb.Tests")
-Target.create "TestLiteDB" (fun _ -> run "-p tests/CosmoStore.LiteDB.Tests")
-Target.create "TestAll" (fun _ ->
+Target.create "TestMartenStore" (fun _ -> run "-p tests/CosmoStore.Marten.Tests")
+Target.create "TestInMemoryStore" (fun _ -> run "-p tests/CosmoStore.InMemory.Tests")
+Target.create "TestAll" (fun _ -> 
     [
         "TestTableStorage"
         "TestCosmosDb"
-        "TestLiteDB"
-    ]
+        "TestMartenStore"
+        "TestInMemoryStore"
+    ] 
     |> List.iter (Target.runParallel 2)
 )
 
 // nugets
 let createNuget (project:Project) =
-    let args =
+    let args = 
         [
             sprintf "Title=\"%s\"" project.Package
             sprintf "Description=\"%s\"" project.Description
@@ -78,33 +88,34 @@ let createNuget (project:Project) =
             sprintf "PackageVersion=\"%s\"" project.ReleaseNotes.NugetVersion
             sprintf "PackageReleaseNotes=\"%s\"" (project.ReleaseNotes.Notes |> String.toLines)
             "PackageLicenseUrl=\"http://github.com/dzoukr/CosmoStore/blob/master/LICENSE.md\""
-            "PackageProjectUrl=\"http://github.com/dzoukr/CosmoStore\""
+            "PackageProjectUrl=\"http://github.com/dzoukr/CosmoStore\"" 
             "PackageIconUrl=\"\""
             "PackageIconUrl=\"https://raw.githubusercontent.com/Dzoukr/CosmoStore/master/logo.png\""
             sprintf "PackageTags=\"%s\"" project.Tags
             "Copyright=\"Roman Provazník - 2019\""
-            "Authors=\"Roman Provazník\""
-        ]
+        ] 
         |> List.map (fun x -> "/p:" + x)
         |> String.concat " "
 
-    project.Src
+    project.Src 
     |> DotNet.pack (fun p -> { p with Configuration = DotNet.Custom "Release"; OutputPath = Some "../../nuget"; Common = { p.Common with CustomParams = Some args } })
 
 Target.create "NugetCosmoStore" (fun _ -> cosmoStore |> createNuget)
-Target.create "NugetLiteDB" (fun _ -> liteDB |> createNuget)
 Target.create "NugetTableStorage" (fun _ -> tableStorage |> createNuget)
 Target.create "NugetCosmosDb" (fun _ -> cosmosDb |> createNuget)
-Target.create "NugetAll" (fun _ ->
+Target.create "NugetMartenStore" (fun _ -> martenStore |> createNuget)
+Target.create "NugetInMemoryStore" (fun _ -> inMemoryStore |> createNuget)
+Target.create "NugetAll" (fun _ -> 
     [
         "NugetCosmoStore"
-        "NugetLiteDB"
         "NugetTableStorage"
         "NugetCosmosDb"
+        "NugetMartenStore"
+        "NugetInMemoryStore"
     ] |> List.iter (Target.runParallel 0)
-)
+)    
 
-Fake.Core.Target.create "Clean" (fun _ ->
+Fake.Core.Target.create "Clean" (fun _ -> 
     !! "src/*/bin"
     ++ "src/*/obj"
     ++ "tests/*/bin"
@@ -114,7 +125,8 @@ Fake.Core.Target.create "Clean" (fun _ ->
 
 "Clean" ==> "TestTableStorage" ==> "NugetTableStorage"
 "Clean" ==> "TestCosmosDb" ==> "NugetCosmosDb"
-"Clean" ==> "TestLiteDB" ==> "NugetLiteDB"
+"Clean" ==> "TestMartenStore" ==> "NugetMartenStore"
+"Clean" ==> "TestInMemoryStore" ==> "NugetInMemoryStore"
 
 // start build
 Fake.Core.Target.runOrDefaultWithArguments "BuildAll"

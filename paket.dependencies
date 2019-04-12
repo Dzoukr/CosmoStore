@@ -28,12 +28,20 @@ group TableStorage
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
     nuget WindowsAzure.Storage !~> 9 lowest_matching: true
 
-group LiteDB
+group Marten
     source https://api.nuget.org/v3/index.json
     storage: none
-    nuget TaskBuilder.fs !~> 2 lowest_matching: true
-    nuget LiteDB
-    nuget LiteDB.FSharp
+    nuget TaskBuilder.fs
+    nuget FSharp.Core >= 4.3.4 < 4.5.4
+    nuget Marten.FSharp
+    github baronfel/Newtonsoft.Json.FSharp.Idiomatic src/Newtonsoft.Json.FSharp.Idiomatic/Newtonsoft.Json.FSharp.Idiomatic.fs 
+    
+group InMemory
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget TaskBuilder.fs
+    nuget FSharp.Core >= 4.3.4 < 4.5.4
+
 
 group Tests
     source https://api.nuget.org/v3/index.json

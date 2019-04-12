@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Roman Provazník;Kunjan Dalal</Authors>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CosmoStore\CosmoStore.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="paket.references" />
+    <Content Include="RELEASE_NOTES.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="InMemoryConf.fs" />
+    <Compile Include="EventStore.fs" />
+  </ItemGroup>
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+</Project>
