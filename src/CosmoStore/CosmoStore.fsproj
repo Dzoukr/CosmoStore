@@ -6,6 +6,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CosmoStore.fs" />
+    <Compile Include="Conversion.fs" />
+    <Compile Include="Validation.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

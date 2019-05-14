@@ -58,28 +58,3 @@ type EventStore = {
     GetStream : string -> Task<Stream>
     EventAppended : IObservable<EventRead>
 }
-
-module Helper =
-    let validatePosition streamId (nextPos: int64) = function
-        | ExpectedPosition.Any -> ()
-        | ExpectedPosition.NoStream ->
-            if nextPos > 1L then
-                failwithf "ESERROR_POSITION_STREAMEXISTS: Stream '%s' was expected to be empty, but contains %i events" streamId (nextPos - 1L)
-        | ExpectedPosition.Exact expectedPos ->
-            if nextPos <> expectedPos then
-                failwithf "ESERROR_POSITION_POSITIONNOTMATCH: Stream '%s' was expected to have next position %i, but has %i" streamId expectedPos nextPos
-
-
-    let checkNull a = obj.ReferenceEquals(a, null)
-
-    let eventWriteToEventRead streamId position createdUtc (x: EventWrite) = {
-        Id = x.Id
-        CorrelationId = x.CorrelationId
-        CausationId = x.CausationId
-        StreamId = streamId
-        Position = position
-        Name = x.Name
-        Data = x.Data
-        Metadata = x.Metadata
-        CreatedUtc = createdUtc
-    }

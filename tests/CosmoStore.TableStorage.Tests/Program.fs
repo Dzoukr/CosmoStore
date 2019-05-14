@@ -7,7 +7,7 @@ open CosmoStore.Tests
 open CosmoStore.TableStorage
 open Microsoft.WindowsAzure.Storage
 
-let private tableName = "CosmosStoreTests"
+let private tableName = "CosmoStoreTests"
 
 let private conf = Configuration.CreateDefaultForLocalEmulator() |> fun cfg -> { cfg with TableName = tableName }
 

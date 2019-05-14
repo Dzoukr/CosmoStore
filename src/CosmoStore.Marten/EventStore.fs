@@ -8,7 +8,6 @@ module EventStore =
     open Marten
     open System.Linq
     open CosmoStore
-    open CosmoStore.Helper
     open FSharp.Control.Tasks.V2.ContextInsensitive
     open System.Reactive.Linq
     open System.Reactive.Concurrency
@@ -38,11 +37,11 @@ module EventStore =
 
                 let nextPos = lastPosition + 1L
 
-                do validatePosition message.StreamId nextPos message.ExpectedPosition
+                do Validation.validatePosition message.StreamId nextPos message.ExpectedPosition
 
                 let ops =
                     message.EventWrites
-                    |> List.mapi (fun i evn -> evn |> eventWriteToEventRead message.StreamId (nextPos + (int64 i)) DateTime.UtcNow)
+                    |> List.mapi (fun i evn -> evn |> Conversion.eventWriteToEventRead message.StreamId (nextPos + (int64 i)) DateTime.UtcNow)
 
                 let _ =
                     match metadataEntity with

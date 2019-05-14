@@ -4,7 +4,6 @@ open System
 open Microsoft.WindowsAzure.Storage
 open Microsoft.WindowsAzure.Storage.Table
 open CosmoStore
-open CosmoStore.Helper
 open FSharp.Control.Tasks.V2
 open CosmoStore.TableStorage
 open System.Reactive.Linq
@@ -36,7 +35,7 @@ let private appendEvents (table:CloudTable) (streamId:string) (expectedPosition:
             }
 
         let nextPos = lastPosition + 1L        
-        do validatePosition streamId nextPos expectedPosition
+        do Validation.validatePosition streamId nextPos expectedPosition
 
         let batchOperation = TableBatchOperation()
 
