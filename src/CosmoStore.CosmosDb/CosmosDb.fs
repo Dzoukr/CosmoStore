@@ -14,6 +14,7 @@ module internal Throughput =
 
 type Configuration = {
     DatabaseName : string
+    CollectionName : string
     ServiceEndpoint : Uri
     AuthKey : string
     Throughput: int
@@ -21,6 +22,7 @@ type Configuration = {
 with
     static member CreateDefault serviceEndpoint authKey = {
         DatabaseName = "EventStore"
+        CollectionName = "Events"
         ServiceEndpoint = serviceEndpoint
         AuthKey = authKey
         Throughput = Throughput.min
