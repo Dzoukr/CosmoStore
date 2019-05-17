@@ -158,11 +158,12 @@ let getEventStore (configuration:Configuration) =
     let appendEventProcUri = UriFactory.CreateStoredProcedureUri(configuration.DatabaseName, configuration.CollectionName, appendEventProcName)
     let eventAppended = Event<EventRead>()
 
-    task {
-        do! createDatabase configuration.DatabaseName client
-        do! createCollection dbUri configuration client
-        do! createStoreProcedures eventsCollectionUri appendEventProcUri configuration.CollectionName client
-    } |> Async.AwaitTask |> Async.RunSynchronously
+    if configuration.InitializeCollection then
+        task {
+            do! createDatabase configuration.DatabaseName client
+            do! createCollection dbUri configuration client
+            do! createStoreProcedures eventsCollectionUri appendEventProcUri configuration.CollectionName client
+        } |> Async.AwaitTask |> Async.RunSynchronously
     
     {
         AppendEvent = fun stream pos event -> task {

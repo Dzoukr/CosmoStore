@@ -1,3 +1,7 @@
+### 2.1.0 - May 17 2019
+* Configurable collection name #25
+* Configurable initialization #23
+
 ### 2.0.1 - February 12 2019
 * Fixing typo StarsWith vs StartsWith
 

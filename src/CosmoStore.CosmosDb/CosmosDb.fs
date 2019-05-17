@@ -17,7 +17,8 @@ type Configuration = {
     CollectionName : string
     ServiceEndpoint : Uri
     AuthKey : string
-    Throughput: int
+    Throughput : int
+    InitializeCollection : bool
 }
 with
     static member CreateDefault serviceEndpoint authKey = {
@@ -26,4 +27,5 @@ with
         ServiceEndpoint = serviceEndpoint
         AuthKey = authKey
         Throughput = Throughput.min
+        InitializeCollection = true
     }
