@@ -1,6 +1,6 @@
 module CosmoStore.Conversion
 
-let eventWriteToEventRead streamId position createdUtc (x:EventWrite) = {
+let eventWriteToEventRead streamId position createdUtc (x:EventWrite<_>) = {
     Id = x.Id
     CorrelationId = x.CorrelationId
     CausationId = x.CausationId
