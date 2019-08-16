@@ -6,7 +6,7 @@ open FSharp.Control.Reactive
 open Expecto
 open ExpectoHelpers
 
-let allTests (cfg:TestConfiguration) = 
+let allTests (cfg:TestConfiguration<_,_>) = 
     [
         testTask "Observers don't interfere with each other" {
             let store = cfg.GetEmptyStore()
@@ -46,7 +46,7 @@ let allTests (cfg:TestConfiguration) =
             notEqual mainThreadNum subThreadNum
             isTrue (watch.ElapsedMilliseconds < 10000L)
         }
-
+        
         testTask "Observes appended single event" {
             let store = cfg.GetEmptyStore()
             let mutable complete = false

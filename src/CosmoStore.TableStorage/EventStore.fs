@@ -21,7 +21,7 @@ let private tryGetStreamMetadata (table:CloudTable) (streamId:string) =
     }
 
 
-let private appendEvents (table:CloudTable) (streamId:string) (expectedPosition:ExpectedPosition) (events:EventWrite list) =
+let private appendEvents (table:CloudTable) (streamId:string) (expectedPosition:ExpectedPosition<_>) (events:EventWrite<_> list) =
     
     task {
         
@@ -80,7 +80,7 @@ let rec private executeQuery (table:CloudTable) (query:TableQuery<_>) (token:Tab
 
 let private getStreams (table:CloudTable) (streamsRead:StreamsReadFilter) =
     let q = Querying.allStreams
-    let byReadFilter (s:Stream) =
+    let byReadFilter (s:Stream<_>) =
         match streamsRead with
         | StreamsReadFilter.AllStreams -> true
         | StreamsReadFilter.Contains c -> s.Id.Contains(c)
@@ -110,7 +110,7 @@ let private getStream (table:CloudTable) streamId =
             |> List.head
     }
 
-let private getEvents (table:CloudTable) streamId (eventsRead:EventsReadRange) =
+let private getEvents (table:CloudTable) streamId (eventsRead:EventsReadRange<_>) =
     let q = Querying.allEventsFiltered streamId eventsRead 
     task {
         let token = TableContinuationToken()
@@ -149,7 +149,7 @@ let getEventStore (configuration:Configuration) =
             CloudStorageAccount(credentials, true)
         | LocalEmulator -> CloudStorageAccount.DevelopmentStorageAccount
 
-    let eventAppended = Event<EventRead>()
+    let eventAppended = Event<EventRead<_,_>>()
     let client = account.CreateCloudTableClient()
     client.GetTableReference(configuration.TableName).CreateIfNotExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
     

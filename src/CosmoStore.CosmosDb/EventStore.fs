@@ -1,8 +1,7 @@
 module CosmoStore.CosmosDb.EventStore
 
 open System
-open Microsoft.Azure.Documents
-open Microsoft.Azure.Documents.Client
+open Microsoft.Azure.Cosmos
 open FSharp.Control.Tasks.V2
 open CosmoStore
 open System.Reflection
@@ -10,39 +9,39 @@ open System.IO
 open CosmoStore.CosmosDb
 open System.Reactive.Linq
 open System.Reactive.Concurrency
+open Newtonsoft.Json.Linq
+open Microsoft.Azure.Cosmos.Scripts
 
 let private partitionKey = "streamId"
 let private appendEventProcName = "AppendEvents"
 
-let private createDatabase dbName (client:DocumentClient) =
+let private createDatabase dbName (client:CosmosClient) =
     task {
-        let db = Database (Id = dbName)
-        let! _ = client.CreateDatabaseIfNotExistsAsync(db)
-        return ()
+        let! db = client.CreateDatabaseIfNotExistsAsync(dbName)
+        return db.Database
     }
  
-let private createCollection (dbUri:Uri) (conf:Configuration) (client:DocumentClient) =
-    let collection = DocumentCollection( Id = conf.CollectionName)
-    
+let private createContainer (db:Database) containerName throughput =
+    let props = ContainerProperties()
+    props.Id <- containerName
+
     // always use partition key
-    collection.PartitionKey.Paths.Add(sprintf "/%s" partitionKey)
+    props.PartitionKeyPath <- sprintf "/%s" partitionKey
     
     // unique keys
-    let streamPath = new System.Collections.ObjectModel.Collection<string>()
-    streamPath.Add("/streamId")
-    streamPath.Add("/position")
-    let keys = new System.Collections.ObjectModel.Collection<UniqueKey>()
-    keys.Add(UniqueKey( Paths = streamPath))
-    collection.UniqueKeyPolicy <- UniqueKeyPolicy(UniqueKeys = keys)
-    
+    let uk = UniqueKey ()
+    uk.Paths.Add "/streamId"
+    uk.Paths.Add "/position"
+
+    let ukPolicy = UniqueKeyPolicy()
+    ukPolicy.UniqueKeys.Add(uk)
+
     // throughput
-    let throughput = conf.Throughput |> Throughput.correct
-    let ro = RequestOptions()
-    ro.OfferThroughput <- Nullable<int>(throughput)
+    let throughput = throughput |> Throughput.correct |> Nullable<int>
 
     task {
-        let! _ = client.CreateDocumentCollectionIfNotExistsAsync(dbUri, collection, ro)
-        return ()
+        let! cont = db.CreateContainerIfNotExistsAsync(props,throughput)
+        return cont.Container
     }
 
 let private getStoredProcedure name =
@@ -53,30 +52,30 @@ let private getStoredProcedure name =
         return! reader.ReadToEndAsync()
     }
 
-let private createStoreProcedures (collUri:Uri) (procUri:Uri) collectionName (client:DocumentClient) =
+let private createStoreProcedures (container:Container) =
     task {
         try
-            let! _ = client.DeleteStoredProcedureAsync(procUri)
+            let! _ = container.Scripts.DeleteStoredProcedureAsync(appendEventProcName)
             ()
         with _ -> ()
         let! storedProcTemplate = getStoredProcedure "AppendEvents.js"
-        let storedProc = storedProcTemplate.Replace("%%COLLECTION_NAME%%", collectionName)
-        let! _ = client.CreateStoredProcedureAsync(collUri, StoredProcedure(Id = appendEventProcName, Body = storedProc))
+        let storedProc = storedProcTemplate.Replace("%%COLLECTION_NAME%%", container.Id)
+        let! _ = container.Scripts.CreateStoredProcedureAsync(StoredProcedureProperties(Id = appendEventProcName, Body = storedProc))
         return ()
     }
 
-let private appendEvents getOpts (client:DocumentClient) (storedProcUri:Uri) (streamId:string) (expectedPosition:ExpectedPosition) (events:EventWrite list) = 
-    let toPositionAndDate (doc:Document) = doc.GetPropertyValue<int64>("position"), doc.GetPropertyValue<DateTime>("created")
+type PositionAndCreated = { Position : int64; Created : DateTime }
+
+let private appendEvents (container:Container) (streamId:StreamId) (expectedPosition:ExpectedPosition<int64>) (events:EventWrite<_> list) = 
     task {
         let jEvents = events |> List.map Serialization.objectToJToken
         let jPosition = expectedPosition |> Serialization.expectedPositionToJObject
-        let opts = streamId |> getOpts
+        let pk = PartitionKey(streamId)
         let pars = [|streamId :> obj; jEvents :> obj; jPosition :> obj|]
-        let! resp = client.ExecuteStoredProcedureAsync<List<Document>>(storedProcUri, opts, pars)
-        return resp.Response 
-        |> List.map toPositionAndDate 
-        |> List.zip events
-        |> List.map (fun (evn,(pos,created)) -> Conversion.eventWriteToEventRead streamId pos created evn)
+        let! resp = container.Scripts.ExecuteStoredProcedureAsync<List<PositionAndCreated>> (appendEventProcName, pk, pars)
+        return resp.Resource 
+            |> List.zip events
+            |> List.map (fun (evn,p) -> Conversion.eventWriteToEventRead streamId p.Position p.Created evn)
     }
 
 let private streamsReadToQuery = function
@@ -86,24 +85,48 @@ let private streamsReadToQuery = function
     | Contains t -> "AND CONTAINS(e.streamId, @streamId)", ("@streamId", t :> obj)
 
 let private createQuery q (pars:(string * obj) list) =
-    let ps = pars |> List.map (fun (x,y) -> SqlParameter(x, y)) |> SqlParameterCollection
-    SqlQuerySpec(q, ps)
+    let foldFn (acc:QueryDefinition) (item:string * obj) = acc.WithParameter item
+    pars |> List.fold foldFn (QueryDefinition q)
 
-let private runQuery<'a> (client:DocumentClient) (collectionUri:Uri) (q:SqlQuerySpec) =
-    let opts = FeedOptions()
-    opts.EnableCrossPartitionQuery <- true
+let private toEventRead (doc:JObject) = 
+    { 
+        Id = doc.Value<string> "id" |> Guid
+        CorrelationId = doc.Value<string>("correlationId") |> function | null -> None | x -> Some (Guid x)
+        CausationId = doc.Value<string>("causationId") |> function | null -> None | x -> Some (Guid x)
+        StreamId = doc.Value<string>("streamId")
+        Position = doc.Value<int64>("position")
+        Name = doc.Value<string>("name")
+        Data = doc.Value<JToken>("data")
+        Metadata = doc.Value<JToken>("metadata") |> function | null -> None | x -> Some x
+        CreatedUtc = doc.Value<DateTime>("createdUtc")
+    }
+
+let private toStream (x:JObject) = {
+    Id = x.Value<string>("streamId")
+    LastUpdatedUtc = x.Value<DateTime>("lastUpdatedUtc")
+    LastPosition = x.Value<int64>("lastPosition")
+}
+
+let private runQuery<'a> mapFn (container:Container) (q:QueryDefinition) =
+    let opts = QueryRequestOptions()
     opts.EnableScanInQuery <- Nullable<bool>(true)
-    client.CreateDocumentQuery<'a>(collectionUri, q, opts) 
+    let iterator = container.GetItemQueryIterator<JObject>(q, null, opts)
+    let items = ResizeArray<'a>()
+    task {
+        while iterator.HasMoreResults do
+            let! values = iterator.ReadNextAsync()
+            values.Resource |> Seq.toList |> List.map mapFn |> items.AddRange
+        return items |> Seq.toList
+    }
 
-let private getStreams (client:DocumentClient) (collectionUri:Uri) collectionName (streamsRead:StreamsReadFilter) =
+let private getStreams (container:Container) collectionName (streamsRead:StreamsReadFilter) =
     task {
         let queryAdd,param = streamsRead |> streamsReadToQuery
-        return createQuery 
+        let! res = 
+            createQuery 
                 (sprintf "SELECT * FROM %s e WHERE e.type = 'Stream' %s" collectionName queryAdd) [param]
-        |> runQuery<Document> client collectionUri
-        |> Seq.toList
-        |> List.map Conversion.documentToStream
-        |> List.sortBy (fun x -> x.Id)
+            |> runQuery<CosmoStore.Stream<_>> toStream container
+        return res |> List.sortBy (fun x -> x.Id)
     }
 
 let private streamEventsReadToQuery = function
@@ -112,62 +135,55 @@ let private streamEventsReadToQuery = function
     | ToPosition pos -> sprintf "AND e.position <= %i" pos
     | PositionRange(st,en) -> sprintf "AND e.position >= %i AND e.position <= %i" st en
 
-let private getEvents (client:DocumentClient) (collectionUri:Uri) collectionName streamId (eventsRead:EventsReadRange) =
+let private getEvents (container:Container) collectionName streamId (eventsRead:EventsReadRange<_>) =
     task {
-        return createQuery 
-            (sprintf "SELECT * FROM %s e WHERE e.streamId = @streamId AND e.type = 'Event' %s ORDER BY e.position ASC" collectionName (streamEventsReadToQuery eventsRead))
-            ["@streamId", streamId :> obj]
-        |> runQuery<Document> client collectionUri
-        |> Seq.toList
-        |> List.map Conversion.documentToEventRead
+        return! 
+            createQuery 
+                (sprintf "SELECT * FROM %s e WHERE e.streamId = @streamId AND e.type = 'Event' %s ORDER BY e.position ASC" collectionName (streamEventsReadToQuery eventsRead))
+                ["@streamId", streamId :> obj]
+            |> runQuery<EventRead<_,_>> toEventRead container
     }
 
-let private getEvent (client:DocumentClient) (collectionUri:Uri) collectionName streamId position =
+let private getEvent (container:Container) collectionName streamId position =
     task {
         let filter = EventsReadRange.PositionRange(position, position)
-        let! events = getEvents client collectionUri collectionName streamId filter
+        let! events = getEvents container collectionName streamId filter
         return events.Head
     }
 
-let private getEventsByCorrelationId (client:DocumentClient) (collectionUri:Uri) collectionName (corrId:Guid) =
+let private getEventsByCorrelationId (container:Container) collectionName (corrId:Guid) =
     task {
-        return createQuery 
+        return! createQuery 
             (sprintf "SELECT * FROM %s e WHERE e.correlationId = @corrId AND e.type = 'Event' ORDER BY e.createdUtc ASC" collectionName)
             ["@corrId", corrId :> obj]
-        |> runQuery<Document> client collectionUri
-        |> Seq.toList
-        |> List.map Conversion.documentToEventRead
+        |> runQuery<EventRead<_,_>> toEventRead container
     }
 
-let private getStream (client:DocumentClient) (collectionUri:Uri) collectionName streamId =
+let private getStream (container:Container) collectionName streamId =
     task {
-        return createQuery 
+        let! streams = 
+            createQuery 
                 (sprintf "SELECT * FROM %s e WHERE e.type = 'Stream' AND e.streamId = @streamId" collectionName) [("@streamId", streamId :> obj)]
-        |> runQuery<Document> client collectionUri
-        |> Seq.toList
-        |> List.map Conversion.documentToStream
-        |> List.head
+            |> runQuery<CosmoStore.Stream<_>> toStream container
+        return streams |> List.head
     }
-
-let private getRequestOptions streamId = RequestOptions(PartitionKey = PartitionKey(streamId))
 
 let getEventStore (configuration:Configuration) = 
-    let client = new DocumentClient(configuration.ServiceEndpoint, configuration.AuthKey)
-    let dbUri = UriFactory.CreateDatabaseUri(configuration.DatabaseName)
-    let eventsCollectionUri = UriFactory.CreateDocumentCollectionUri(configuration.DatabaseName, configuration.CollectionName)
-    let appendEventProcUri = UriFactory.CreateStoredProcedureUri(configuration.DatabaseName, configuration.CollectionName, appendEventProcName)
-    let eventAppended = Event<EventRead>()
+    let client = new CosmosClient(configuration.ConnectionString)
+    let eventAppended = Event<EventRead<JToken,int64>>()
 
-    if configuration.InitializeCollection then
+    if configuration.InitializeContainer then
         task {
-            do! createDatabase configuration.DatabaseName client
-            do! createCollection dbUri configuration client
-            do! createStoreProcedures eventsCollectionUri appendEventProcUri configuration.CollectionName client
+            let! db = createDatabase configuration.DatabaseName client
+            let! cont = createContainer db configuration.ContainerName configuration.Throughput
+            do! createStoreProcedures cont
         } |> Async.AwaitTask |> Async.RunSynchronously
     
+    let container = client.GetContainer(configuration.DatabaseName, configuration.ContainerName)
+
     {
         AppendEvent = fun stream pos event -> task {
-            let! events = appendEvents getRequestOptions client appendEventProcUri stream pos [event]
+            let! events = appendEvents container stream pos [event]
             events |> List.iter eventAppended.Trigger
             return events |> List.head
         }
@@ -175,15 +191,15 @@ let getEventStore (configuration:Configuration) =
         AppendEvents = fun stream pos events -> task {
             if events |> List.isEmpty then return []
             else 
-                let! events = appendEvents getRequestOptions client appendEventProcUri stream pos events
+                let! events = appendEvents container stream pos events
                 events |> List.iter eventAppended.Trigger
                 return events
         } 
 
-        GetEvent = getEvent client eventsCollectionUri configuration.CollectionName
-        GetEvents = getEvents client eventsCollectionUri configuration.CollectionName
-        GetEventsByCorrelationId = getEventsByCorrelationId client eventsCollectionUri configuration.CollectionName
-        GetStreams = getStreams client eventsCollectionUri configuration.CollectionName
-        GetStream = getStream client eventsCollectionUri configuration.CollectionName
+        GetEvent = getEvent container configuration.ContainerName
+        GetEvents = getEvents container configuration.ContainerName
+        GetEventsByCorrelationId = getEventsByCorrelationId container configuration.ContainerName
+        GetStreams = getStreams container configuration.ContainerName
+        GetStream = getStream container configuration.ContainerName
         EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)
     }

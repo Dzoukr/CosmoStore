@@ -43,7 +43,7 @@ let deserialize<'a> json = JsonConvert.DeserializeObject<'a>(json, settings)
 let objectFromJToken<'a> (token:JToken) = token.ToString() |> deserialize<'a>
 let objectToJToken obj = obj |> serialize |> JToken.Parse
 
-let expectedPositionToJObject (x:ExpectedPosition) = 
+let expectedPositionToJObject (x:ExpectedPosition<int64>) = 
     let json = JObject()
     match x with
     | Any -> json.["mode"] <- JValue("any")

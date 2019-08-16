@@ -8,7 +8,6 @@
     <EmbeddedResource Include="StoredProcedures\AppendEvents.js" />
     <Compile Include="CosmosDb.fs" />
     <Compile Include="Serialization.fs" />
-    <Compile Include="Conversion.fs" />
     <Compile Include="EventStore.fs" />
   </ItemGroup>
   <ItemGroup>

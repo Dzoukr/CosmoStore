@@ -3,6 +3,8 @@ namespace CosmoStore
 open System
 open System.Threading.Tasks
 
+type StreamId = string
+
 type ExpectedPosition<'position> =
     | Any
     | NoStream
@@ -24,7 +26,7 @@ type EventRead<'payload,'position> = {
     Id : Guid
     CorrelationId : Guid option
     CausationId : Guid option
-    StreamId : string
+    StreamId : StreamId
     Position: 'position
     Name : string
     Data : 'payload
@@ -42,18 +44,18 @@ type EventWrite<'payload> = {
 }
 
 type Stream<'position> = {
-    Id : string
+    Id : StreamId
     LastPosition : 'position
     LastUpdatedUtc: DateTime
 }
 
 type EventStore<'payload,'position> = {
-    AppendEvent : string -> ExpectedPosition<'position> -> EventWrite<'payload> -> Task<EventRead<'payload,'position>>
-    AppendEvents : string -> ExpectedPosition<'position> -> EventWrite<'payload> list -> Task<EventRead<'payload,'position> list>
-    GetEvent : string -> 'position -> Task<EventRead<'payload,'position>>
-    GetEvents : string -> EventsReadRange<'position> -> Task<EventRead<'payload,'position> list>
+    AppendEvent : StreamId -> ExpectedPosition<'position> -> EventWrite<'payload> -> Task<EventRead<'payload,'position>>
+    AppendEvents : StreamId -> ExpectedPosition<'position> -> EventWrite<'payload> list -> Task<EventRead<'payload,'position> list>
+    GetEvent : StreamId -> 'position -> Task<EventRead<'payload,'position>>
+    GetEvents : StreamId -> EventsReadRange<'position> -> Task<EventRead<'payload,'position> list>
     GetEventsByCorrelationId : Guid -> Task<EventRead<'payload,'position> list>
     GetStreams : StreamsReadFilter -> Task<Stream<'position> list>
-    GetStream : string -> Task<Stream<'position>>
+    GetStream : StreamId -> Task<Stream<'position>>
     EventAppended : IObservable<EventRead<'payload,'position>>
 }

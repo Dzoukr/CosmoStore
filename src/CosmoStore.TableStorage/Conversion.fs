@@ -17,7 +17,7 @@ let updateStreamEntity lastPosition (x:DynamicTableEntity) =
     x.Properties.["Position"] <- EntityProperty.GeneratePropertyForLong(lastPosition |> Nullable)
     x
 
-let eventWriteToEntity streamId position (x:EventWrite) : DynamicTableEntity = 
+let eventWriteToEntity streamId position (x:EventWrite<_>) : DynamicTableEntity = 
     let entity = DynamicTableEntity(streamId, x.Id.ToString())
     entity.Properties.Add("Position", EntityProperty.GeneratePropertyForLong(position |> Nullable))
     entity.Properties.Add("Name", EntityProperty.GeneratePropertyForString(x.Name))
@@ -49,7 +49,7 @@ let isEvent (x:DynamicTableEntity) = x.RowKey <> streamRowKey
 
 let newStreamEntity streamId = DynamicTableEntity(streamId, "Stream")
 
-let entityToEventRead (x:DynamicTableEntity) : EventRead =
+let entityToEventRead (x:DynamicTableEntity) : EventRead<_,_> =
     {
         Id = x.RowKey |> Guid
         CorrelationId = x.Properties |> tryValue "CorrelationId" |> Option.map (fun x -> x.GuidValue.Value)

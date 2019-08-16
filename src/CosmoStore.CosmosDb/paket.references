@@ -1,3 +1,4 @@
 group CosmosDb
     TaskBuilder.fs
-    Microsoft.Azure.DocumentDB.Core
+    Microsoft.Azure.Cosmos
+    Newtonsoft.Json

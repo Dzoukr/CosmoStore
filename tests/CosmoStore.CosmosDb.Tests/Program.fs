@@ -5,20 +5,18 @@ open Expecto
 open Expecto.Logging
 open CosmoStore.Tests
 open CosmoStore.CosmosDb
-open Microsoft.Azure.Documents.Client
-
-let collectionName = "MyEvents"
+open Microsoft.Azure.Cosmos
 
 let private config = 
     CosmoStore.CosmosDb.Configuration.CreateDefault 
-        (Uri "https://localhost:8081") 
-        "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
-    |> fun cfg -> { cfg with DatabaseName = "CosmoStoreTests"; Throughput = 10000; CollectionName = collectionName }
+        "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+    |> fun cfg -> { cfg with DatabaseName = "CosmoStoreTests"; Throughput = 10000; ContainerName = "MyEvents" }
 
 let private getCleanEventStore() =
-    let client = new DocumentClient(config.ServiceEndpoint, config.AuthKey)
+    let client = new CosmosClient(config.ConnectionString)
     try
-        do client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(config.DatabaseName, collectionName)) 
+        client.GetContainer(config.DatabaseName, config.ContainerName)
+        |> (fun x -> x.DeleteContainerAsync())
         |> Async.AwaitTask 
         |> Async.RunSynchronously 
         |> ignore
@@ -27,7 +25,7 @@ let private getCleanEventStore() =
     
 let testConfig = 
     { Expecto.Tests.defaultConfig with 
-        parallelWorkers = 2
+        parallelWorkers = 4
         verbosity = LogLevel.Debug }
 
 let cfg = Domain.defaultTestConfiguration getCleanEventStore

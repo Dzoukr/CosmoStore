@@ -14,18 +14,16 @@ module internal Throughput =
 
 type Configuration = {
     DatabaseName : string
-    CollectionName : string
-    ServiceEndpoint : Uri
-    AuthKey : string
+    ContainerName : string
+    ConnectionString : string
     Throughput : int
-    InitializeCollection : bool
+    InitializeContainer : bool
 }
 with
-    static member CreateDefault serviceEndpoint authKey = {
+    static member CreateDefault connectionString = {
         DatabaseName = "EventStore"
-        CollectionName = "Events"
-        ServiceEndpoint = serviceEndpoint
-        AuthKey = authKey
+        ContainerName = "Events"
+        ConnectionString = connectionString
         Throughput = Throughput.min
-        InitializeCollection = true
+        InitializeContainer = true
     }

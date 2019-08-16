@@ -3,7 +3,6 @@ version 5.215.0
 source https://api.nuget.org/v3/index.json
 storage: none
 nuget FSharp.Core = 4.3.1
-nuget Newtonsoft.Json !~> 11 lowest_matching: true
 nuget System.Reactive !~> 4 lowest_matching: true
 
 group Build
@@ -20,7 +19,8 @@ group CosmosDb
     source https://api.nuget.org/v3/index.json
     storage: none
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
-    nuget Microsoft.Azure.DocumentDB.Core !~> 2 lowest_matching: true
+    nuget Microsoft.Azure.Cosmos !~> 3 lowest_matching: true
+    nuget Newtonsoft.Json !~> 11 lowest_matching: true
 
 group TableStorage
     source https://api.nuget.org/v3/index.json
@@ -42,10 +42,10 @@ group InMemory
     nuget TaskBuilder.fs
     nuget FSharp.Core >= 4.3.4 < 4.5.4
 
-
 group Tests
     source https://api.nuget.org/v3/index.json
     storage: none
     nuget Expecto
     nuget Expecto.VisualStudio.TestAdapter
     nuget FSharp.Control.Reactive
+    nuget Newtonsoft.Json !~> 11 lowest_matching: true
