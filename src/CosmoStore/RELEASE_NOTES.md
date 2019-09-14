@@ -1,3 +1,6 @@
+### 2.1.0 - May 14 2019
+* Added helper functions for validation and conversion
+
 ### 2.0.1 - February 12 2019
 * Fixing typo StarsWith vs StartsWith
 

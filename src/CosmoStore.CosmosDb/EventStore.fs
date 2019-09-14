@@ -11,7 +11,6 @@ open CosmoStore.CosmosDb
 open System.Reactive.Linq
 open System.Reactive.Concurrency
 
-let private collectionName = "Events"
 let private partitionKey = "streamId"
 let private appendEventProcName = "AppendEvents"
 
@@ -22,8 +21,8 @@ let private createDatabase dbName (client:DocumentClient) =
         return ()
     }
  
-let private createCollection (dbUri:Uri) (throughput:int) (client:DocumentClient) =
-    let collection = DocumentCollection( Id = collectionName)
+let private createCollection (dbUri:Uri) (conf:Configuration) (client:DocumentClient) =
+    let collection = DocumentCollection( Id = conf.CollectionName)
     
     // always use partition key
     collection.PartitionKey.Paths.Add(sprintf "/%s" partitionKey)
@@ -37,8 +36,8 @@ let private createCollection (dbUri:Uri) (throughput:int) (client:DocumentClient
     collection.UniqueKeyPolicy <- UniqueKeyPolicy(UniqueKeys = keys)
     
     // throughput
-    let throughput = throughput |> Throughput.correct
-    let ro = new RequestOptions()
+    let throughput = conf.Throughput |> Throughput.correct
+    let ro = RequestOptions()
     ro.OfferThroughput <- Nullable<int>(throughput)
 
     task {
@@ -54,13 +53,14 @@ let private getStoredProcedure name =
         return! reader.ReadToEndAsync()
     }
 
-let private createStoreProcedures (collUri:Uri) (procUri:Uri) (client:DocumentClient) =
+let private createStoreProcedures (collUri:Uri) (procUri:Uri) collectionName (client:DocumentClient) =
     task {
         try
             let! _ = client.DeleteStoredProcedureAsync(procUri)
             ()
         with _ -> ()
-        let! storedProc = getStoredProcedure "AppendEvents.js"
+        let! storedProcTemplate = getStoredProcedure "AppendEvents.js"
+        let storedProc = storedProcTemplate.Replace("%%COLLECTION_NAME%%", collectionName)
         let! _ = client.CreateStoredProcedureAsync(collUri, StoredProcedure(Id = appendEventProcName, Body = storedProc))
         return ()
     }
@@ -90,12 +90,12 @@ let private createQuery q (pars:(string * obj) list) =
     SqlQuerySpec(q, ps)
 
 let private runQuery<'a> (client:DocumentClient) (collectionUri:Uri) (q:SqlQuerySpec) =
-    let opts = new FeedOptions()
+    let opts = FeedOptions()
     opts.EnableCrossPartitionQuery <- true
     opts.EnableScanInQuery <- Nullable<bool>(true)
     client.CreateDocumentQuery<'a>(collectionUri, q, opts) 
 
-let private getStreams (client:DocumentClient) (collectionUri:Uri) (streamsRead:StreamsReadFilter) =
+let private getStreams (client:DocumentClient) (collectionUri:Uri) collectionName (streamsRead:StreamsReadFilter) =
     task {
         let queryAdd,param = streamsRead |> streamsReadToQuery
         return createQuery 
@@ -112,7 +112,7 @@ let private streamEventsReadToQuery = function
     | ToPosition pos -> sprintf "AND e.position <= %i" pos
     | PositionRange(st,en) -> sprintf "AND e.position >= %i AND e.position <= %i" st en
 
-let private getEvents (client:DocumentClient) (collectionUri:Uri) streamId (eventsRead:EventsReadRange) =
+let private getEvents (client:DocumentClient) (collectionUri:Uri) collectionName streamId (eventsRead:EventsReadRange) =
     task {
         return createQuery 
             (sprintf "SELECT * FROM %s e WHERE e.streamId = @streamId AND e.type = 'Event' %s ORDER BY e.position ASC" collectionName (streamEventsReadToQuery eventsRead))
@@ -122,14 +122,14 @@ let private getEvents (client:DocumentClient) (collectionUri:Uri) streamId (even
         |> List.map Conversion.documentToEventRead
     }
 
-let private getEvent (client:DocumentClient) (collectionUri:Uri) streamId position =
+let private getEvent (client:DocumentClient) (collectionUri:Uri) collectionName streamId position =
     task {
         let filter = EventsReadRange.PositionRange(position, position)
-        let! events = getEvents client collectionUri streamId filter
+        let! events = getEvents client collectionUri collectionName streamId filter
         return events.Head
     }
 
-let private getEventsByCorrelationId (client:DocumentClient) (collectionUri:Uri) (corrId:Guid) =
+let private getEventsByCorrelationId (client:DocumentClient) (collectionUri:Uri) collectionName (corrId:Guid) =
     task {
         return createQuery 
             (sprintf "SELECT * FROM %s e WHERE e.correlationId = @corrId AND e.type = 'Event' ORDER BY e.createdUtc ASC" collectionName)
@@ -139,7 +139,7 @@ let private getEventsByCorrelationId (client:DocumentClient) (collectionUri:Uri)
         |> List.map Conversion.documentToEventRead
     }
 
-let private getStream (client:DocumentClient) (collectionUri:Uri) streamId =
+let private getStream (client:DocumentClient) (collectionUri:Uri) collectionName streamId =
     task {
         return createQuery 
                 (sprintf "SELECT * FROM %s e WHERE e.type = 'Stream' AND e.streamId = @streamId" collectionName) [("@streamId", streamId :> obj)]
@@ -154,15 +154,16 @@ let private getRequestOptions streamId = RequestOptions(PartitionKey = Partition
 let getEventStore (configuration:Configuration) = 
     let client = new DocumentClient(configuration.ServiceEndpoint, configuration.AuthKey)
     let dbUri = UriFactory.CreateDatabaseUri(configuration.DatabaseName)
-    let eventsCollectionUri = UriFactory.CreateDocumentCollectionUri(configuration.DatabaseName, collectionName)
-    let appendEventProcUri = UriFactory.CreateStoredProcedureUri(configuration.DatabaseName, collectionName, appendEventProcName)
+    let eventsCollectionUri = UriFactory.CreateDocumentCollectionUri(configuration.DatabaseName, configuration.CollectionName)
+    let appendEventProcUri = UriFactory.CreateStoredProcedureUri(configuration.DatabaseName, configuration.CollectionName, appendEventProcName)
     let eventAppended = Event<EventRead>()
 
-    task {
-        do! createDatabase configuration.DatabaseName client
-        do! createCollection dbUri configuration.Throughput client
-        do! createStoreProcedures eventsCollectionUri appendEventProcUri client
-    } |> Async.AwaitTask |> Async.RunSynchronously
+    if configuration.InitializeCollection then
+        task {
+            do! createDatabase configuration.DatabaseName client
+            do! createCollection dbUri configuration client
+            do! createStoreProcedures eventsCollectionUri appendEventProcUri configuration.CollectionName client
+        } |> Async.AwaitTask |> Async.RunSynchronously
     
     {
         AppendEvent = fun stream pos event -> task {
@@ -179,10 +180,10 @@ let getEventStore (configuration:Configuration) =
                 return events
         } 
 
-        GetEvent = getEvent client eventsCollectionUri
-        GetEvents = getEvents client eventsCollectionUri
-        GetEventsByCorrelationId = getEventsByCorrelationId client eventsCollectionUri
-        GetStreams = getStreams client eventsCollectionUri
-        GetStream = getStream client eventsCollectionUri
+        GetEvent = getEvent client eventsCollectionUri configuration.CollectionName
+        GetEvents = getEvents client eventsCollectionUri configuration.CollectionName
+        GetEventsByCorrelationId = getEventsByCorrelationId client eventsCollectionUri configuration.CollectionName
+        GetStreams = getStreams client eventsCollectionUri configuration.CollectionName
+        GetStream = getStream client eventsCollectionUri configuration.CollectionName
         EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)
     }

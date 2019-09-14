@@ -7,29 +7,6 @@ open System.Reactive.Concurrency
 
 
 module EventStore =
-    let private validatePosition streamId (nextPos: int64) = function
-        | ExpectedPosition.Any -> ()
-        | ExpectedPosition.NoStream ->
-            if nextPos > 1L then
-                failwithf "ESERROR_POSITION_STREAMEXISTS: Stream '%s' was expected to be empty, but contains %i events" streamId (nextPos - 1L)
-        | ExpectedPosition.Exact expectedPos ->
-            if nextPos <> expectedPos then
-                failwithf "ESERROR_POSITION_POSITIONNOTMATCH: Stream '%s' was expected to have next position %i, but has %i" streamId expectedPos nextPos
-
-
-    let checkNull a = obj.ReferenceEquals(a, null)
-
-    let eventWriteToEventRead streamId position createdUtc (x: EventWrite) = {
-        Id = x.Id
-        CorrelationId = x.CorrelationId
-        CausationId = x.CausationId
-        StreamId = streamId
-        Position = position
-        Name = x.Name
-        Data = x.Data
-        Metadata = x.Metadata
-        CreatedUtc = createdUtc
-    }
 
     type StreamData = {
         StreamStore: StreamStoreType
@@ -53,11 +30,11 @@ module EventStore =
 
                 let nextPos = lastPosition + 1L
 
-                do validatePosition message.StreamId nextPos message.ExpectedPosition
+                do Validation.validatePosition message.StreamId nextPos message.ExpectedPosition
 
                 let ops =
                     message.EventWrites
-                    |> List.mapi (fun i evn -> evn |> eventWriteToEventRead message.StreamId (nextPos + (int64 i)) DateTime.UtcNow)
+                    |> List.mapi (fun i evn -> evn |> Conversion.eventWriteToEventRead message.StreamId (nextPos + (int64 i)) DateTime.UtcNow)
 
                 let updatedStream =
                     match metadataEntity with

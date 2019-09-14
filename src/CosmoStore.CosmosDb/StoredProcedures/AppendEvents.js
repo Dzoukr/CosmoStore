@@ -81,7 +81,7 @@
     }
 
     // metadata query
-    var metadataQuery = 'SELECT * FROM Events e WHERE e.streamId = "' + streamId + '" AND e.type = "' + streamType + '"';
+    var metadataQuery = 'SELECT * FROM %%COLLECTION_NAME%% e WHERE e.streamId = "' + streamId + '" AND e.type = "' + streamType + '"';
     var transactionAccepted = collection.queryDocuments(collection.getSelfLink(), metadataQuery, run);
     if (!transactionAccepted) throw "Transaction not accepted, rollback";
 }

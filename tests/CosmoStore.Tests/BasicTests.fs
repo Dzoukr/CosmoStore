@@ -11,24 +11,24 @@ let private withCorrelationId i (e:EventWrite) = { e with CorrelationId = Some i
 
 let eventsTests (cfg:TestConfiguration) = 
     testList "Events" [
-
-        testTask "Append events parallel" {
-            let streamId = cfg.GetStreamId()
-
-            let storeEvent = async {
-                return! 
-                    [1..10] 
-                    |> List.map cfg.GetEvent 
-                    |> cfg.Store.AppendEvents streamId Any
-                    |> Async.AwaitTask
-            }
-
-            [1..10]
-            |> List.map (fun _ -> storeEvent)
-            |> Async.Parallel
-            |> Async.RunSynchronously
-            |> ignore
-        }
+        
+        // testTask "Append events parallel" {
+        //     let streamId = cfg.GetStreamId()
+            
+        //     let storeEvent = async {
+        //         return! 
+        //             [1..10] 
+        //             |> List.map cfg.GetEvent 
+        //             |> cfg.Store.AppendEvents streamId Any
+        //             |> Async.AwaitTask
+        //     }
+            
+        //     [1..10]
+        //     |> List.map (fun _ -> storeEvent)
+        //     |> Async.Parallel
+        //     |> Async.RunSynchronously
+        //     |> ignore
+        // }
 
         //TODO: Commented test. If not require remove it.
         // testTask "Store same event twice" {

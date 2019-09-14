@@ -7,16 +7,18 @@ open CosmoStore.Tests
 open CosmoStore.CosmosDb
 open Microsoft.Azure.Documents.Client
 
+let collectionName = "MyEvents"
+
 let private config = 
     CosmoStore.CosmosDb.Configuration.CreateDefault 
         (Uri "https://localhost:8081") 
         "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
-    |> fun cfg -> { cfg with DatabaseName = "CosmosStoreTests"; Throughput = 10000 }
+    |> fun cfg -> { cfg with DatabaseName = "CosmoStoreTests"; Throughput = 10000; CollectionName = collectionName }
 
 let private getCleanEventStore() =
     let client = new DocumentClient(config.ServiceEndpoint, config.AuthKey)
     try
-        do client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(config.DatabaseName, "Events")) 
+        do client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(config.DatabaseName, collectionName)) 
         |> Async.AwaitTask 
         |> Async.RunSynchronously 
         |> ignore
