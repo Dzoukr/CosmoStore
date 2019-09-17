@@ -59,7 +59,7 @@ let private createStoreProcedures (container:Container) =
             ()
         with _ -> ()
         let! storedProcTemplate = getStoredProcedure "AppendEvents.js"
-        let storedProc = storedProcTemplate.Replace("%%COLLECTION_NAME%%", container.Id)
+        let storedProc = storedProcTemplate.Replace("%%CONTAINER_NAME%%", container.Id)
         let! _ = container.Scripts.CreateStoredProcedureAsync(StoredProcedureProperties(Id = appendEventProcName, Body = storedProc))
         return ()
     }
@@ -119,12 +119,12 @@ let private runQuery<'a> mapFn (container:Container) (q:QueryDefinition) =
         return items |> Seq.toList
     }
 
-let private getStreams (container:Container) collectionName (streamsRead:StreamsReadFilter) =
+let private getStreams (container:Container) containerName (streamsRead:StreamsReadFilter) =
     task {
         let queryAdd,param = streamsRead |> streamsReadToQuery
         let! res = 
             createQuery 
-                (sprintf "SELECT * FROM %s e WHERE e.type = 'Stream' %s" collectionName queryAdd) [param]
+                (sprintf "SELECT * FROM %s e WHERE e.type = 'Stream' %s" containerName queryAdd) [param]
             |> runQuery<CosmoStore.Stream<_>> toStream container
         return res |> List.sortBy (fun x -> x.Id)
     }
@@ -135,35 +135,35 @@ let private streamEventsReadToQuery = function
     | ToPosition pos -> sprintf "AND e.position <= %i" pos
     | PositionRange(st,en) -> sprintf "AND e.position >= %i AND e.position <= %i" st en
 
-let private getEvents (container:Container) collectionName streamId (eventsRead:EventsReadRange<_>) =
+let private getEvents (container:Container) containerName streamId (eventsRead:EventsReadRange<_>) =
     task {
         return! 
             createQuery 
-                (sprintf "SELECT * FROM %s e WHERE e.streamId = @streamId AND e.type = 'Event' %s ORDER BY e.position ASC" collectionName (streamEventsReadToQuery eventsRead))
+                (sprintf "SELECT * FROM %s e WHERE e.streamId = @streamId AND e.type = 'Event' %s ORDER BY e.position ASC" containerName (streamEventsReadToQuery eventsRead))
                 ["@streamId", streamId :> obj]
             |> runQuery<EventRead<_,_>> toEventRead container
     }
 
-let private getEvent (container:Container) collectionName streamId position =
+let private getEvent (container:Container) containerName streamId position =
     task {
         let filter = EventsReadRange.PositionRange(position, position)
-        let! events = getEvents container collectionName streamId filter
+        let! events = getEvents container containerName streamId filter
         return events.Head
     }
 
-let private getEventsByCorrelationId (container:Container) collectionName (corrId:Guid) =
+let private getEventsByCorrelationId (container:Container) containerName (corrId:Guid) =
     task {
         return! createQuery 
-            (sprintf "SELECT * FROM %s e WHERE e.correlationId = @corrId AND e.type = 'Event' ORDER BY e.createdUtc ASC" collectionName)
+            (sprintf "SELECT * FROM %s e WHERE e.correlationId = @corrId AND e.type = 'Event' ORDER BY e.createdUtc ASC" containerName)
             ["@corrId", corrId :> obj]
         |> runQuery<EventRead<_,_>> toEventRead container
     }
 
-let private getStream (container:Container) collectionName streamId =
+let private getStream (container:Container) containerName streamId =
     task {
         let! streams = 
             createQuery 
-                (sprintf "SELECT * FROM %s e WHERE e.type = 'Stream' AND e.streamId = @streamId" collectionName) [("@streamId", streamId :> obj)]
+                (sprintf "SELECT * FROM %s e WHERE e.type = 'Stream' AND e.streamId = @streamId" containerName) [("@streamId", streamId :> obj)]
             |> runQuery<CosmoStore.Stream<_>> toStream container
         return streams |> List.head
     }

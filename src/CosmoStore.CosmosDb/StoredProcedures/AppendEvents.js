@@ -1,7 +1,7 @@
 ﻿function storedProcedure(streamId, documentsToCreate, expectedPosition) {
 
     var context = getContext();
-    var collection = context.getCollection();
+    var container = context.getCollection();
     var response = context.getResponse();
     var streamType = "Stream";
     var eventType = "Event";
@@ -50,15 +50,15 @@
             }
 
             resp.push({ position: nextPosition, created: created });
-            var acceptedDoc = collection.createDocument(collection.getSelfLink(), doc, checkErrorFn);
+            var acceptedDoc = container.createDocument(container.getSelfLink(), doc, checkErrorFn);
             if (!acceptedDoc) {
-                throw "Failed to append event on position " + nextPosition + " - Rollback. Please try to increase RU for collection Events.";
+                throw "Failed to append event on position " + nextPosition + " - Rollback. Please try to increase RU for events container.";
             }
         }
 
         metadata.lastPosition = nextPosition;
         metadata.lastUpdatedUtc = created;
-        var acceptedMeta = collection.replaceDocument(metadata._self, metadata, checkErrorFn);
+        var acceptedMeta = container.replaceDocument(metadata._self, metadata, checkErrorFn);
         if (!acceptedMeta) {
             throw "Failed to update metadata for stream - Rollback";
         }
@@ -74,14 +74,14 @@
                 type: streamType,
                 lastPosition: 0
             }
-            return collection.createDocument(collection.getSelfLink(), newMeta, createDocument);
+            return container.createDocument(container.getSelfLink(), newMeta, createDocument);
         } else {
             return createDocument(err, metadataResults[0]);
         }
     }
 
     // metadata query
-    var metadataQuery = 'SELECT * FROM %%COLLECTION_NAME%% e WHERE e.streamId = "' + streamId + '" AND e.type = "' + streamType + '"';
-    var transactionAccepted = collection.queryDocuments(collection.getSelfLink(), metadataQuery, run);
+    var metadataQuery = 'SELECT * FROM %%CONTAINER_NAME%% e WHERE e.streamId = "' + streamId + '" AND e.type = "' + streamType + '"';
+    var transactionAccepted = container.queryDocuments(container.getSelfLink(), metadataQuery, run);
     if (!transactionAccepted) throw "Transaction not accepted, rollback";
 }
