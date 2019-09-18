@@ -1,26 +1,27 @@
 namespace CosmoStore.InMemory
+
 open System
 open CosmoStore
 open FSharp.Control.Tasks.V2
+open Newtonsoft.Json.Linq
 open System.Reactive.Linq
 open System.Reactive.Concurrency
 
-
 module EventStore =
 
-    type StreamData = {
-        StreamStore: StreamStoreType
-        EventStore: EventStoreType
+    type StreamData<'payload, 'position> = {
+        StreamStore: StreamStoreType<'position>
+        EventStore: EventStoreType<'payload, 'position>
         StreamId: string
-        ExpectedPosition: ExpectedPosition
-        EventWrites: EventWrite list
+        ExpectedPosition: ExpectedPosition<'position>
+        EventWrites: EventWrite<'payload> list
     }
-    type AgentResponse = | EventReads of EventRead list | Error of exn
+    type AgentResponse<'payload, 'position> = | EventReads of EventRead<'payload, 'position> list | Error of exn
 
-    type StreamMessage = Data of StreamData * AsyncReplyChannel<AgentResponse>
+    type StreamMessage<'payload, 'position> = Data of StreamData<'payload, 'position> * AsyncReplyChannel<AgentResponse<'payload, 'position>>
 
-    let agent =
-            let processEvents (message: StreamData) =
+    let agent : MailboxProcessor<StreamMessage<JToken, int64>> =
+            let processEvents (message: StreamData<_,_>) =
                 let lastPosition, metadataEntity =
                     let res = message.StreamStore.ContainsKey(message.StreamId) |> fun x -> if x then Some message.StreamStore.[message.StreamId] else None
                     match res with
@@ -47,7 +48,7 @@ module EventStore =
                 ops |> List.map (fun x -> message.EventStore.TryAdd(x.Id, x)) |> List.fold (fun acc x -> x && acc) true |> ignore
                 ops
 
-            MailboxProcessor<StreamMessage>.Start(fun inbox ->
+            MailboxProcessor<StreamMessage<_,_>>.Start(fun inbox ->
 
             let rec loop() =
                 async {
@@ -64,7 +65,7 @@ module EventStore =
             loop()
         )
 
-    let private appendEvents (streamStore) (eventStore) (streamId: string) (expectedPosition: ExpectedPosition) (events: EventWrite list) =
+    let private appendEvents (streamStore) (eventStore) (streamId: string) (expectedPosition: ExpectedPosition<_>) (events: EventWrite<_> list) =
         task {
             let message = {
                 StreamStore = streamStore
@@ -80,7 +81,7 @@ module EventStore =
                 | Error ex -> raise ex
             return getEventReads()
         }
-    let private getEvents (store: EventStoreType) (streamId: string) (eventsRead: EventsReadRange) = task {
+    let private getEvents (store: EventStoreType<_,_>) (streamId: string) (eventsRead: EventsReadRange<_>) = task {
         let fetch =
             let currentStreamEvents = store.Values |> Seq.filter (fun x -> x.StreamId = streamId)
             match eventsRead with
@@ -97,13 +98,13 @@ module EventStore =
         return events.Head
     }
 
-    let private getEventsByCorrelationId (store: EventStoreType) corrId =
+    let private getEventsByCorrelationId (store: EventStoreType<_,_>) corrId =
         task {
             let res = store.Values |> Seq.filter (fun x -> x.CorrelationId = Some corrId)
             return (res |> Seq.toList)
         }
 
-    let private getStreams (store: StreamStoreType) streamsRead = task {
+    let private getStreams (store: StreamStoreType<_>) streamsRead = task {
         let res =
             match streamsRead with
             | AllStreams -> store.Values |> Seq.toList
@@ -113,16 +114,16 @@ module EventStore =
         return (res |> Seq.sortBy(fun x -> x.Id) |> Seq.toList)
      }
 
-    let private getStream (store: StreamStoreType) streamId = task {
+    let private getStream (store: StreamStoreType<_>) streamId = task {
         let res = store.ContainsKey(streamId)
         if res then return store.[streamId]
         else return failwithf "SessionId %s is not present in database" streamId
     }
-    let getEventStore (configuration: Configuration) =
+    let getEventStore (configuration: Configuration<_,_>) =
         let streamStore = configuration.InMemoryStreams
         let eventStore = configuration.InMemoryEvents
 
-        let eventAppended = Event<EventRead>()
+        let eventAppended = Event<EventRead<_,_>>()
 
 
         {

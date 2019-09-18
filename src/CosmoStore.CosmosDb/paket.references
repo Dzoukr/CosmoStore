@@ -1,4 +1,5 @@
 group CosmosDb
+    FSharp.Core
     TaskBuilder.fs
     Microsoft.Azure.Cosmos
     Newtonsoft.Json

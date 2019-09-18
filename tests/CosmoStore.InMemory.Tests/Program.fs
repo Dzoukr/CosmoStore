@@ -7,7 +7,7 @@ open System
 open System.Collections.Concurrent
 
 let private getCleanEventStore() =
-    getEventStore {InMemoryStreams = new ConcurrentDictionary<string,Stream>(); InMemoryEvents = new ConcurrentDictionary<Guid,EventRead>()}
+    getEventStore {InMemoryStreams = new ConcurrentDictionary<string,Stream<_>>(); InMemoryEvents = new ConcurrentDictionary<Guid,EventRead<_,_>>()}
 
 let testConfig =
     { Expecto.Tests.defaultConfig with

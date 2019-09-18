@@ -1,10 +1,5 @@
 version 5.215.0
 
-source https://api.nuget.org/v3/index.json
-storage: none
-nuget FSharp.Core = 4.3.1
-nuget System.Reactive !~> 4 lowest_matching: true
-
 group Build
     source https://api.nuget.org/v3/index.json
     storage: none
@@ -15,9 +10,16 @@ group Build
     nuget Fake.DotNet.Testing.NUnit
     nuget Fake.Core.ReleaseNotes
 
+group CosmoStore
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget FSharp.Core = 4.3.1
+    nuget System.Reactive !~> 4 lowest_matching: true
+
 group CosmosDb
     source https://api.nuget.org/v3/index.json
     storage: none
+    nuget FSharp.Core = 4.3.1
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
     nuget Microsoft.Azure.Cosmos !~> 3 lowest_matching: true
     nuget Newtonsoft.Json !~> 11 lowest_matching: true
@@ -25,6 +27,7 @@ group CosmosDb
 group TableStorage
     source https://api.nuget.org/v3/index.json
     storage: none
+    nuget FSharp.Core = 4.3.1
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
     nuget WindowsAzure.Storage !~> 9 lowest_matching: true
 
@@ -39,8 +42,9 @@ group Marten
 group InMemory
     source https://api.nuget.org/v3/index.json
     storage: none
+    nuget FSharp.Core = 4.3.1
     nuget TaskBuilder.fs
-    nuget FSharp.Core >= 4.3.4 < 4.5.4
+    nuget Newtonsoft.Json !~> 11 lowest_matching: true
 
 group Tests
     source https://api.nuget.org/v3/index.json
