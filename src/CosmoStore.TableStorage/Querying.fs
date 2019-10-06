@@ -42,6 +42,6 @@ let allEventsFiltered streamId filter =
     let basicFilter = streamId |> allEventsFilter
     match filter with
     | AllEvents -> basicFilter |> toQuery
-    | FromPosition p -> basicFilter |> withPositionGreaterOrEqual p |> toQuery
-    | ToPosition p -> basicFilter |> withPositionLessOrEqual p |> toQuery
+    | FromVersion p -> basicFilter |> withPositionGreaterOrEqual p |> toQuery
+    | ToVersion p -> basicFilter |> withPositionLessOrEqual p |> toQuery
     | PositionRange(f,t) -> basicFilter |> withPositionGreaterOrEqual f |> withPositionLessOrEqual t |> toQuery

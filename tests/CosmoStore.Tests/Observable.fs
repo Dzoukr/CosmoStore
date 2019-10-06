@@ -38,7 +38,7 @@ let allTests (cfg:TestConfiguration<_,_>) =
                 complete2 <- true
             )
     
-            do! store.AppendEvents streamId ExpectedPosition.Any events 
+            do! store.AppendEvents streamId ExpectedVersion.Any events 
             while (complete1 = false || complete2 = false) do ()
             watch.Stop()
 
@@ -60,7 +60,7 @@ let allTests (cfg:TestConfiguration<_,_>) =
                 complete <- true
             )
     
-            do! store.AppendEvent streamId ExpectedPosition.Any event
+            do! store.AppendEvent streamId ExpectedVersion.Any event
             while (complete = false) do ()
             equal 1 count
         }
@@ -78,7 +78,7 @@ let allTests (cfg:TestConfiguration<_,_>) =
                 complete <- true
             )
     
-            do! store.AppendEvents streamId ExpectedPosition.Any events
+            do! store.AppendEvents streamId ExpectedVersion.Any events
             while (complete = false) do ()
             equal 10 count
         }

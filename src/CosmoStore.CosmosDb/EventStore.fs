@@ -15,13 +15,14 @@ open Microsoft.Azure.Cosmos.Scripts
 let private partitionKey = "streamId"
 let private appendEventProcName = "AppendEvents"
 
-let private createDatabase dbName (client:CosmosClient) =
+
+let private createDatabaseIfNotExists dbName (client:CosmosClient) =
     task {
         let! db = client.CreateDatabaseIfNotExistsAsync(dbName)
         return db.Database
     }
  
-let private createContainer (db:Database) containerName throughput =
+let private createContainerIfNotExists (db:Database) containerName throughput =
     let props = ContainerProperties()
     props.Id <- containerName
 
@@ -31,10 +32,11 @@ let private createContainer (db:Database) containerName throughput =
     // unique keys
     let uk = UniqueKey ()
     uk.Paths.Add "/streamId"
-    uk.Paths.Add "/position"
+    uk.Paths.Add "/version"
 
     let ukPolicy = UniqueKeyPolicy()
     ukPolicy.UniqueKeys.Add(uk)
+    props.UniqueKeyPolicy <- ukPolicy
 
     // throughput
     let throughput = throughput |> Throughput.correct |> Nullable<int>
@@ -44,7 +46,7 @@ let private createContainer (db:Database) containerName throughput =
         return cont.Container
     }
 
-let private getStoredProcedure name =
+let private getStoredProcedureTemplate name =
     task {
         let ass = typeof<CosmoStore.CosmosDb.Configuration>.GetTypeInfo().Assembly
         use stream = ass.GetManifestResourceStream(sprintf "CosmoStore.CosmosDb.StoredProcedures.%s" name)
@@ -52,13 +54,13 @@ let private getStoredProcedure name =
         return! reader.ReadToEndAsync()
     }
 
-let private createStoreProcedures (container:Container) =
+let private createStoreProcedures (strategy:StorageVersion) (container:Container) =
     task {
         try
             let! _ = container.Scripts.DeleteStoredProcedureAsync(appendEventProcName)
             ()
         with _ -> ()
-        let! storedProcTemplate = getStoredProcedure "AppendEvents.js"
+        let! storedProcTemplate = strategy |> StorageVersion.getStoredProcedureName |> getStoredProcedureTemplate
         let storedProc = storedProcTemplate.Replace("%%CONTAINER_NAME%%", container.Id)
         let! _ = container.Scripts.CreateStoredProcedureAsync(StoredProcedureProperties(Id = appendEventProcName, Body = storedProc))
         return ()
@@ -66,17 +68,55 @@ let private createStoreProcedures (container:Container) =
 
 type PositionAndCreated = { Position : int64; Created : DateTime }
 
-let private appendEvents (container:Container) (streamId:StreamId) (expectedPosition:ExpectedPosition<int64>) (events:EventWrite<_> list) = 
-    task {
-        let jEvents = events |> List.map Serialization.objectToJToken
-        let jPosition = expectedPosition |> Serialization.expectedPositionToJObject
-        let pk = PartitionKey(streamId)
-        let pars = [|streamId :> obj; jEvents :> obj; jPosition :> obj|]
-        let! resp = container.Scripts.ExecuteStoredProcedureAsync<List<PositionAndCreated>> (appendEventProcName, pk, pars)
-        return resp.Resource 
-            |> List.zip events
-            |> List.map (fun (evn,p) -> Conversion.eventWriteToEventRead streamId p.Position p.Created evn)
+module private Version2 =
+
+    let appendEvents (version:StorageVersion) (container:Container) (streamId:StreamId) (expectedVersion:ExpectedVersion<int64>) (events:EventWrite<_> list) = 
+        task {
+            let jEvents = events |> List.map Serialization.objectToJToken
+            let jPosition = expectedVersion |> Serialization.expectedVersionToJObject version
+            let pk = PartitionKey(streamId)
+            let pars = [|streamId :> obj; jEvents :> obj; jPosition :> obj|]
+            let! resp = container.Scripts.ExecuteStoredProcedureAsync<List<PositionAndCreated>> (appendEventProcName, pk, pars)
+            return resp.Resource 
+                |> List.zip events
+                |> List.map (fun (evn,p) -> Conversion.eventWriteToEventRead streamId p.Position p.Created evn)
+        }
+
+type VersionAndCreated = { Version : int64; Created : DateTime }
+        
+module private Version3 =
+    
+
+    let appendEvents (version:StorageVersion) (container:Container) (streamId:StreamId) (expectedVersion:ExpectedVersion<int64>) (events:EventWrite<_> list) = 
+        task {
+            let jEvents = events |> List.map Serialization.objectToJToken
+            let jVersion = expectedVersion |> Serialization.expectedVersionToJObject version
+            let pk = PartitionKey(streamId)
+            let pars = [|streamId :> obj; jEvents :> obj; jVersion :> obj|]
+            let! resp = container.Scripts.ExecuteStoredProcedureAsync<List<VersionAndCreated>> (appendEventProcName, pk, pars)
+            return resp.Resource 
+                |> List.zip events
+                |> List.map (fun (evn,p) -> Conversion.eventWriteToEventRead streamId p.Version p.Created evn)
+        }
+        
+let private toEventRead (version:StorageVersion) (doc:JObject) = 
+    { 
+        Id = doc.Value<string> "id" |> Guid
+        CorrelationId = doc.Value<string>("correlationId") |> function | null -> None | x -> Some (Guid x)
+        CausationId = doc.Value<string>("causationId") |> function | null -> None | x -> Some (Guid x)
+        StreamId = doc.Value<string>("streamId")
+        Version = doc.Value<int64>(StorageVersion.getPositionOrVersion version)
+        Name = doc.Value<string>("name")
+        Data = doc.Value<JToken>("data")
+        Metadata = doc.Value<JToken>("metadata") |> function | null -> None | x -> Some x
+        CreatedUtc = doc.Value<DateTime>("createdUtc")
     }
+    
+let private toStream (version:StorageVersion) (x:JObject) = {
+    Id = x.Value<string>("streamId")
+    LastUpdatedUtc = x.Value<DateTime>("lastUpdatedUtc")
+    LastVersion = x.Value<int64>(StorageVersion.getLastPositionOrLastVersion version)
+}
 
 let private streamsReadToQuery = function
     | AllStreams -> "", ("@_", null)
@@ -87,25 +127,6 @@ let private streamsReadToQuery = function
 let private createQuery q (pars:(string * obj) list) =
     let foldFn (acc:QueryDefinition) (item:string * obj) = acc.WithParameter item
     pars |> List.fold foldFn (QueryDefinition q)
-
-let private toEventRead (doc:JObject) = 
-    { 
-        Id = doc.Value<string> "id" |> Guid
-        CorrelationId = doc.Value<string>("correlationId") |> function | null -> None | x -> Some (Guid x)
-        CausationId = doc.Value<string>("causationId") |> function | null -> None | x -> Some (Guid x)
-        StreamId = doc.Value<string>("streamId")
-        Position = doc.Value<int64>("position")
-        Name = doc.Value<string>("name")
-        Data = doc.Value<JToken>("data")
-        Metadata = doc.Value<JToken>("metadata") |> function | null -> None | x -> Some x
-        CreatedUtc = doc.Value<DateTime>("createdUtc")
-    }
-
-let private toStream (x:JObject) = {
-    Id = x.Value<string>("streamId")
-    LastUpdatedUtc = x.Value<DateTime>("lastUpdatedUtc")
-    LastPosition = x.Value<int64>("lastPosition")
-}
 
 let private runQuery<'a> mapFn (container:Container) (q:QueryDefinition) =
     let opts = QueryRequestOptions()
@@ -119,53 +140,66 @@ let private runQuery<'a> mapFn (container:Container) (q:QueryDefinition) =
         return items |> Seq.toList
     }
 
-let private getStreams (container:Container) containerName (streamsRead:StreamsReadFilter) =
+let private getStreams (version:StorageVersion) (container:Container) containerName (streamsRead:StreamsReadFilter) =
     task {
         let queryAdd,param = streamsRead |> streamsReadToQuery
         let! res = 
             createQuery 
                 (sprintf "SELECT * FROM %s e WHERE e.type = 'Stream' %s" containerName queryAdd) [param]
-            |> runQuery<CosmoStore.Stream<_>> toStream container
+            |> runQuery<CosmoStore.Stream<_>> (toStream version) container
         return res |> List.sortBy (fun x -> x.Id)
     }
 
-let private streamEventsReadToQuery = function
+let private streamEventsReadToQuery (version:StorageVersion) (range:EventsReadRange<_>) =
+    let posOrver = (StorageVersion.getPositionOrVersion version)
+    match range with
     | AllEvents -> ""
-    | FromPosition pos -> sprintf "AND e.position >= %i" pos
-    | ToPosition pos -> sprintf "AND e.position <= %i" pos
-    | PositionRange(st,en) -> sprintf "AND e.position >= %i AND e.position <= %i" st en
+    | FromVersion pos -> sprintf "AND e.%s >= %i" posOrver pos 
+    | ToVersion pos -> sprintf "AND e.%s <= %i" posOrver pos
+    | VersionRange(st,en) -> sprintf "AND e.%s >= %i AND e.%s <= %i" posOrver st posOrver en
 
-let private getEvents (container:Container) containerName streamId (eventsRead:EventsReadRange<_>) =
+let private getEvents (version:StorageVersion) (container:Container) containerName streamId (eventsRead:EventsReadRange<_>) =
     task {
         return! 
             createQuery 
-                (sprintf "SELECT * FROM %s e WHERE e.streamId = @streamId AND e.type = 'Event' %s ORDER BY e.position ASC" containerName (streamEventsReadToQuery eventsRead))
+                (sprintf "SELECT * FROM %s e WHERE e.streamId = @streamId AND e.type = 'Event' %s ORDER BY e.%s ASC" containerName (streamEventsReadToQuery version eventsRead) (StorageVersion.getPositionOrVersion version))
                 ["@streamId", streamId :> obj]
-            |> runQuery<EventRead<_,_>> toEventRead container
+            |> runQuery<EventRead<_,_>> (toEventRead version) container
     }
 
-let private getEvent (container:Container) containerName streamId position =
+let private getEvent storageVersion (container:Container) containerName streamId version =
     task {
-        let filter = EventsReadRange.PositionRange(position, position)
-        let! events = getEvents container containerName streamId filter
+        let filter = EventsReadRange.VersionRange(version, version)
+        let! events = getEvents storageVersion container containerName streamId filter
         return events.Head
     }
 
-let private getEventsByCorrelationId (container:Container) containerName (corrId:Guid) =
+let private getEventsByCorrelationId version (container:Container) containerName (corrId:Guid) =
     task {
         return! createQuery 
             (sprintf "SELECT * FROM %s e WHERE e.correlationId = @corrId AND e.type = 'Event' ORDER BY e.createdUtc ASC" containerName)
             ["@corrId", corrId :> obj]
-        |> runQuery<EventRead<_,_>> toEventRead container
+        |> runQuery<EventRead<_,_>> (toEventRead version) container
     }
 
-let private getStream (container:Container) containerName streamId =
+let private getStream version (container:Container) containerName streamId =
     task {
         let! streams = 
             createQuery 
                 (sprintf "SELECT * FROM %s e WHERE e.type = 'Stream' AND e.streamId = @streamId" containerName) [("@streamId", streamId :> obj)]
-            |> runQuery<CosmoStore.Stream<_>> toStream container
+            |> runQuery<CosmoStore.Stream<_>> (toStream version) container
         return streams |> List.head
+    }
+
+let private getStorageVersion (cont:Container) =
+    task {
+        let! props = cont.ReadContainerAsync()
+        let keys = props.Resource.UniqueKeyPolicy.UniqueKeys
+        let key = keys.[0]
+        match key.Paths.[1] with
+        | "/position" -> return Version2
+        | "/version" -> return Version3
+        | v -> return failwithf "Invalid uniqueKey '%s'" v
     }
 
 let getEventStore (configuration:Configuration) = 
@@ -174,16 +208,28 @@ let getEventStore (configuration:Configuration) =
 
     if configuration.InitializeContainer then
         task {
-            let! db = createDatabase configuration.DatabaseName client
-            let! cont = createContainer db configuration.ContainerName configuration.Throughput
-            do! createStoreProcedures cont
+            let! db = createDatabaseIfNotExists configuration.DatabaseName client
+            let! cont = createContainerIfNotExists db configuration.ContainerName configuration.Throughput
+            let! version = cont |> getStorageVersion
+            let! _ = createStoreProcedures version cont
+            return ()
         } |> Async.AwaitTask |> Async.RunSynchronously
     
     let container = client.GetContainer(configuration.DatabaseName, configuration.ContainerName)
-
+    let version =
+            container
+            |> getStorageVersion
+            |> Async.AwaitTask
+            |> Async.RunSynchronously
+    
+    let appendEvents =
+        match version with
+        | Version2 -> Version2.appendEvents
+        | Version3 -> Version3.appendEvents
+    
     {
         AppendEvent = fun stream pos event -> task {
-            let! events = appendEvents container stream pos [event]
+            let! events = appendEvents version container stream pos [event]
             events |> List.iter eventAppended.Trigger
             return events |> List.head
         }
@@ -191,15 +237,15 @@ let getEventStore (configuration:Configuration) =
         AppendEvents = fun stream pos events -> task {
             if events |> List.isEmpty then return []
             else 
-                let! events = appendEvents container stream pos events
+                let! events = appendEvents version container stream pos events
                 events |> List.iter eventAppended.Trigger
                 return events
         } 
 
-        GetEvent = getEvent container configuration.ContainerName
-        GetEvents = getEvents container configuration.ContainerName
-        GetEventsByCorrelationId = getEventsByCorrelationId container configuration.ContainerName
-        GetStreams = getStreams container configuration.ContainerName
-        GetStream = getStream container configuration.ContainerName
+        GetEvent = getEvent version container configuration.ContainerName
+        GetEvents = getEvents version container configuration.ContainerName
+        GetEventsByCorrelationId = getEventsByCorrelationId version container configuration.ContainerName
+        GetStreams = getStreams version container configuration.ContainerName
+        GetStream = getStream version container configuration.ContainerName
         EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)
     }

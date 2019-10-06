@@ -94,8 +94,8 @@ module EventStore =
         let! fetch =
             match eventsRead with
             | AllEvents -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId @> 
-            | FromPosition f -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position >= f @>
-            | ToPosition t -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position > 0L && x.Position <= t @>
+            | FromVersion f -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position >= f @>
+            | ToVersion t -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position > 0L && x.Position <= t @>
             | PositionRange(f, t) -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position >= f && x.Position <= t @>
             |> Queryable.orderBy <@ fun x -> x.Position @>
             |> Queryable.toListTask

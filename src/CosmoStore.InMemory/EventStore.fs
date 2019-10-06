@@ -9,29 +9,29 @@ open System.Reactive.Concurrency
 
 module EventStore =
 
-    type StreamData<'payload, 'position> = {
-        StreamStore: StreamStoreType<'position>
-        EventStore: EventStoreType<'payload, 'position>
+    type StreamData<'payload, 'version> = {
+        StreamStore: StreamStoreType<'version>
+        EventStore: EventStoreType<'payload, 'version>
         StreamId: string
-        ExpectedPosition: ExpectedPosition<'position>
+        ExpectedVersion: ExpectedVersion<'version>
         EventWrites: EventWrite<'payload> list
     }
-    type AgentResponse<'payload, 'position> = | EventReads of EventRead<'payload, 'position> list | Error of exn
+    type AgentResponse<'payload, 'version> = | EventReads of EventRead<'payload, 'version> list | Error of exn
 
-    type StreamMessage<'payload, 'position> = Data of StreamData<'payload, 'position> * AsyncReplyChannel<AgentResponse<'payload, 'position>>
+    type StreamMessage<'payload, 'version> = Data of StreamData<'payload, 'version> * AsyncReplyChannel<AgentResponse<'payload, 'version>>
 
     let agent : MailboxProcessor<StreamMessage<JToken, int64>> =
             let processEvents (message: StreamData<_,_>) =
-                let lastPosition, metadataEntity =
+                let lastVersion, metadataEntity =
                     let res = message.StreamStore.ContainsKey(message.StreamId) |> fun x -> if x then Some message.StreamStore.[message.StreamId] else None
                     match res with
                     | Some r ->
-                        r.LastPosition, Some r
+                        r.LastVersion, Some r
                     | None -> 0L, None
 
-                let nextPos = lastPosition + 1L
+                let nextPos = lastVersion + 1L
 
-                do Validation.validatePosition message.StreamId nextPos message.ExpectedPosition
+                do Validation.validateVersion message.StreamId nextPos message.ExpectedVersion
 
                 let ops =
                     message.EventWrites
@@ -40,10 +40,10 @@ module EventStore =
                 let updatedStream =
                     match metadataEntity with
                     | Some s ->
-                        { s with LastPosition = (s.LastPosition + (int64 message.EventWrites.Length)); LastUpdatedUtc = DateTime.UtcNow }
+                        { s with LastVersion = (s.LastVersion + (int64 message.EventWrites.Length)); LastUpdatedUtc = DateTime.UtcNow }
 
                     | None ->
-                        { Id = message.StreamId; LastPosition = (int64 message.EventWrites.Length); LastUpdatedUtc = DateTime.UtcNow }
+                        { Id = message.StreamId; LastVersion = (int64 message.EventWrites.Length); LastUpdatedUtc = DateTime.UtcNow }
                 message.StreamStore.AddOrUpdate(updatedStream.Id, updatedStream, fun _ _ -> updatedStream) |> ignore
                 ops |> List.map (fun x -> message.EventStore.TryAdd(x.Id, x)) |> List.fold (fun acc x -> x && acc) true |> ignore
                 ops
@@ -65,13 +65,13 @@ module EventStore =
             loop()
         )
 
-    let private appendEvents (streamStore) (eventStore) (streamId: string) (expectedPosition: ExpectedPosition<_>) (events: EventWrite<_> list) =
+    let private appendEvents (streamStore) (eventStore) (streamId: string) (expectedVersion: ExpectedVersion<_>) (events: EventWrite<_> list) =
         task {
             let message = {
                 StreamStore = streamStore
                 EventStore = eventStore
                 StreamId = streamId
-                ExpectedPosition = expectedPosition
+                ExpectedVersion = expectedVersion
                 EventWrites = events
             }
             let getEventReads() =
@@ -86,14 +86,14 @@ module EventStore =
             let currentStreamEvents = store.Values |> Seq.filter (fun x -> x.StreamId = streamId)
             match eventsRead with
             | AllEvents -> currentStreamEvents
-            | FromPosition f -> currentStreamEvents |> Seq.filter (fun x -> x.Position >= f)
-            | ToPosition t -> currentStreamEvents |> Seq.filter (fun x -> x.Position > 0L && x.Position <= t)
-            | PositionRange(f, t) -> currentStreamEvents |> Seq.filter (fun x -> x.Position >= f && x.Position <= t)
-        let res = fetch |> Seq.sortBy (fun x -> x.Position) |> Seq.toList
+            | FromVersion f -> currentStreamEvents |> Seq.filter (fun x -> x.Version >= f)
+            | ToVersion t -> currentStreamEvents |> Seq.filter (fun x -> x.Version > 0L && x.Version <= t)
+            | VersionRange(f, t) -> currentStreamEvents |> Seq.filter (fun x -> x.Version >= f && x.Version <= t)
+        let res = fetch |> Seq.sortBy (fun x -> x.Version) |> Seq.toList
         return res
     }
-    let private getEvent store streamId position = task {
-        let filter = EventsReadRange.PositionRange(position, position + 1L)
+    let private getEvent store streamId version = task {
+        let filter = EventsReadRange.VersionRange(version, version + 1L)
         let! events = getEvents store streamId filter
         return events.Head
     }

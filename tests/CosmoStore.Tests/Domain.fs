@@ -42,8 +42,8 @@ module ExpectoHelpers =
     let notEqual x y = Expect.notEqual x y (sprintf "%A != %A" x y)
     let isTrue x = Expect.isTrue x (sprintf "%A = true" x)
     let private checkPosition acc (item: EventRead<_,_>) =
-        isTrue (item.Position > acc)
-        item.Position
+        isTrue (item.Version > acc)
+        item.Version
     let private checkCreation acc item =
         isTrue (item.CreatedUtc >= acc)
         item.CreatedUtc
