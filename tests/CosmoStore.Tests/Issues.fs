@@ -6,7 +6,7 @@ open Expecto
 open Domain
 open Domain.ExpectoHelpers
 
-let allTests (cfg:TestConfiguration<_,_>) = 
+let allTests (cfg:TestDataGenerator<_,_>) = 
     [
         testTask "Can read back Events stored without metadata" {
             let streamId = cfg.GetStreamId()

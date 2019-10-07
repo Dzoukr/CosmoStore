@@ -14,13 +14,13 @@ let private config =
 
 let private getCleanEventStore() =
     let client = new CosmosClient(config.ConnectionString)
-    try
-        client.GetContainer(config.DatabaseName, config.ContainerName)
-        |> (fun x -> x.DeleteContainerAsync())
-        |> Async.AwaitTask 
-        |> Async.RunSynchronously 
-        |> ignore
-    with ex -> ()
+//    try
+//        client.GetContainer(config.DatabaseName, config.ContainerName)
+//        |> (fun x -> x.DeleteContainerAsync())
+//        |> Async.AwaitTask 
+//        |> Async.RunSynchronously 
+//        |> ignore
+//    with ex -> ()
     config |> EventStore.getEventStore
     
 let testConfig = 
