@@ -6,7 +6,7 @@ open FSharp.Control.Reactive
 open Expecto
 open ExpectoHelpers
 
-let allTests (cfg:TestDataGenerator<_,_>) = 
+let allTests (gen:TestDataGenerator<_>) eventStore = 
     [
         testTask "Observers don't interfere with each other" {
             let mutable complete1 = false
@@ -16,12 +16,12 @@ let allTests (cfg:TestDataGenerator<_,_>) =
 
             let watch = System.Diagnostics.Stopwatch.StartNew()
 
-            let streamId = cfg.GetStreamId()
-            let events = [1..10] |> List.map cfg.GetEvent
+            let streamId = gen.GetStreamId()
+            let events = [1..10] |> List.map gen.GetEvent
     
             let mainThreadNum = System.Threading.Thread.CurrentThread.ManagedThreadId
 
-            cfg.Store.EventAppended 
+            eventStore.EventAppended 
             |> Observable.add (fun x -> 
                 subThreadNum <- System.Threading.Thread.CurrentThread.ManagedThreadId
                 complete1 <- true
@@ -29,14 +29,14 @@ let allTests (cfg:TestDataGenerator<_,_>) =
                 ()
             )
     
-            cfg.Store.EventAppended 
+            eventStore.EventAppended 
             |> Observable.bufferCount 10
             |> Observable.add (fun x -> 
                 count <- x.Count
                 complete2 <- true
             )
     
-            do! cfg.Store.AppendEvents streamId ExpectedVersion.Any events 
+            do! eventStore.AppendEvents streamId ExpectedVersion.Any events 
             while (complete1 = false || complete2 = false) do ()
             watch.Stop()
 
@@ -48,16 +48,16 @@ let allTests (cfg:TestDataGenerator<_,_>) =
         testTask "Observes appended single event" {
             let mutable complete = false
             let mutable count = 0
-            let streamId = cfg.GetStreamId()
-            let event = 1 |> cfg.GetEvent
-            cfg.Store.EventAppended 
+            let streamId = gen.GetStreamId()
+            let event = 1 |> gen.GetEvent
+            eventStore.EventAppended 
             |> Observable.bufferCount 1
             |> Observable.add (fun x -> 
                 count <- x.Count
                 complete <- true
             )
     
-            do! cfg.Store.AppendEvent streamId ExpectedVersion.Any event
+            do! eventStore.AppendEvent streamId ExpectedVersion.Any event
             while (complete = false) do ()
             equal 1 count
         }
@@ -65,16 +65,16 @@ let allTests (cfg:TestDataGenerator<_,_>) =
         testTask "Observes appended events" {
             let mutable complete = false
             let mutable count = 0
-            let streamId = cfg.GetStreamId()
-            let events = [1..10] |> List.map cfg.GetEvent
-            cfg.Store.EventAppended 
+            let streamId = gen.GetStreamId()
+            let events = [1..10] |> List.map gen.GetEvent
+            eventStore.EventAppended 
             |> Observable.bufferCount 10
             |> Observable.add (fun x -> 
                 count <- x.Count
                 complete <- true
             )
     
-            do! cfg.Store.AppendEvents streamId ExpectedVersion.Any events
+            do! eventStore.AppendEvents streamId ExpectedVersion.Any events
             while (complete = false) do ()
             equal 10 count
         }

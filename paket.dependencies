@@ -53,3 +53,8 @@ group Tests
     nuget Expecto.VisualStudio.TestAdapter
     nuget FSharp.Control.Reactive
     nuget Newtonsoft.Json !~> 11 lowest_matching: true
+    
+group TestsV2
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget CosmoStore.CosmosDb = 2.1.0

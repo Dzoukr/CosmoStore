@@ -25,10 +25,7 @@ let testConfig =
         parallelWorkers = 2
         verbosity = LogLevel.Debug }
 
-let cfg = Domain.defaultTestConfiguration getCleanEventStore
-
 [<EntryPoint>]
 let main _ = 
-    (cfg, "Table Storage") 
-    |> AllTests.getTests 
+    AllTests.getTests "Table Storage" Generator.defaultGenerator (getCleanEventStore())
     |> runTests testConfig
