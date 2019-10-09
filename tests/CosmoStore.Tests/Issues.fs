@@ -15,7 +15,7 @@ let allTests (gen:TestDataGenerator<_>) eventStore =
             equal None e.Metadata
         }
 
-        testTask "NoStream Position check works for non-existing stream" {
+        testTask "NoStream Version check works for non-existing stream" {
             let streamId = gen.GetStreamId()
             let event = 1 |> gen.GetEvent |> (fun e -> { e with Metadata = None })
             let! (e : EventRead<_,_>) = event |> eventStore.AppendEvent streamId NoStream

@@ -4565,6 +4565,10 @@ NUGET
       CosmoStore (>= 2.1) - restriction: >= netstandard2.0
       Microsoft.Azure.DocumentDB.Core (>= 2.0) - restriction: >= netstandard2.0
       TaskBuilder.fs (>= 2.0) - restriction: >= netstandard2.0
+    CosmoStore.TableStorage (2.0.1)
+      CosmoStore (>= 2.0.1) - restriction: >= netstandard2.0
+      TaskBuilder.fs (>= 2.0) - restriction: >= netstandard2.0
+      WindowsAzure.Storage (>= 9.0) - restriction: >= netstandard2.0
     FSharp.Core (4.7) - restriction: >= netstandard2.0
     Microsoft.Azure.DocumentDB.Core (2.7) - restriction: >= netstandard2.0
       NETStandard.Library (>= 1.6) - restriction: >= netstandard1.5
@@ -4583,8 +4587,17 @@ NUGET
       System.Net.WebHeaderCollection (>= 4.0.1) - restriction: >= netstandard1.6
       System.Runtime.Serialization.Primitives (>= 4.1.1) - restriction: >= netstandard1.6
       System.Security.SecureString (>= 4.0) - restriction: >= netstandard1.5
+    Microsoft.Azure.KeyVault.Core (3.0.4) - restriction: || (&& (>= net45) (>= netstandard2.0)) (&& (>= netstandard2.0) (>= wp8))
+      Microsoft.Rest.ClientRuntime (>= 2.3.20 < 3.0) - restriction: || (&& (>= net452) (< netstandard1.4)) (&& (< net452) (>= netstandard1.4) (< netstandard2.0)) (&& (< net452) (>= netstandard2.0)) (>= net461)
+      Microsoft.Rest.ClientRuntime.Azure (>= 3.3.18 < 4.0) - restriction: || (&& (>= net452) (< netstandard1.4)) (&& (< net452) (>= netstandard1.4) (< netstandard2.0)) (&& (< net452) (>= netstandard2.0)) (>= net461)
+      Newtonsoft.Json (>= 10.0.3) - restriction: || (&& (>= net452) (< netstandard1.4)) (&& (< net452) (>= netstandard1.4) (< netstandard2.0)) (&& (< net452) (>= netstandard2.0)) (>= net461)
     Microsoft.NETCore.Platforms (3.0) - restriction: || (&& (< monoandroid) (< net45) (>= netstandard2.0) (< xamarinios) (< xamarinmac)) (&& (< net45) (>= net46) (< netstandard1.4) (>= netstandard2.0)) (&& (< net45) (>= net461) (>= netstandard2.0)) (&& (< net45) (< netstandard1.2) (>= netstandard2.0) (< win8)) (&& (< net45) (>= netstandard2.0) (< win8) (< wpa81)) (>= netcoreapp2.0) (&& (>= netcoreapp2.1) (< netcoreapp3.0)) (&& (< netstandard1.0) (>= netstandard2.0) (< portable-net45+win8)) (&& (< netstandard1.0) (>= netstandard2.0) (>= win8)) (&& (< netstandard1.0) (>= netstandard2.0) (< win8)) (&& (< netstandard1.3) (>= netstandard2.0) (< win8) (>= wpa81)) (&& (>= netstandard2.0) (< portable-net45+win8+wpa81)) (&& (>= netstandard2.0) (>= uap10.0)) (&& (>= netstandard2.0) (>= wp8))
     Microsoft.NETCore.Targets (3.0) - restriction: || (&& (< monoandroid) (< net45) (< netstandard1.4) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (< netstandard1.5) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (< netstandard1.6) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< monoandroid) (< net45) (>= netstandard2.0) (< xamarinios) (< xamarinmac)) (&& (< net45) (>= net46) (< netstandard1.4) (>= netstandard2.0)) (&& (>= netstandard2.0) (>= uap10.0))
+    Microsoft.Rest.ClientRuntime (2.3.20) - restriction: || (&& (>= net45) (< net452) (>= netstandard2.0)) (&& (>= net452) (< netstandard1.4) (>= netstandard2.0)) (&& (>= net461) (>= netstandard2.0)) (&& (>= netstandard2.0) (>= wp8))
+      Newtonsoft.Json (>= 10.0.3) - restriction: || (&& (< net452) (>= netstandard1.4) (< netstandard2.0)) (&& (< net452) (>= netstandard2.0)) (>= net461)
+    Microsoft.Rest.ClientRuntime.Azure (3.3.19) - restriction: || (&& (>= net45) (< net452) (>= netstandard2.0)) (&& (>= net452) (< netstandard1.4) (>= netstandard2.0)) (&& (>= net461) (>= netstandard2.0)) (&& (>= netstandard2.0) (>= wp8))
+      Microsoft.Rest.ClientRuntime (>= 2.3.19 < 3.0) - restriction: || (&& (>= net452) (< netstandard1.4)) (&& (< net452) (>= netstandard1.4) (< netstandard2.0)) (&& (< net452) (>= netstandard2.0)) (>= net461)
+      Newtonsoft.Json (>= 10.0.3) - restriction: || (&& (< net452) (>= netstandard1.4) (< netstandard2.0)) (&& (< net452) (>= netstandard2.0)) (>= net461)
     Microsoft.Win32.Primitives (4.3) - restriction: || (&& (< monoandroid) (< net45) (>= netstandard2.0) (< win8) (< wpa81) (< xamarinios) (< xamarinmac)) (&& (< monoandroid) (< net46) (< netstandard1.6) (>= netstandard2.0)) (&& (< monoandroid) (< net46) (>= netstandard2.0) (< xamarinios) (< xamarinmac)) (&& (< net45) (>= net46) (< netstandard1.4) (>= netstandard2.0)) (&& (< net45) (< netstandard1.4) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< net45) (< netstandard1.5) (>= netstandard2.0) (< win8) (< wpa81)) (&& (< net45) (< netstandard1.6) (>= netstandard2.0) (< win8) (< wpa81)) (&& (>= netstandard2.0) (>= uap10.0))
       Microsoft.NETCore.Platforms (>= 1.1) - restriction: && (< monoandroid) (< monotouch) (< net46) (>= netstandard1.3) (< xamarinios) (< xamarinmac) (< xamarintvos) (< xamarinwatchos)
       Microsoft.NETCore.Targets (>= 1.1) - restriction: && (< monoandroid) (< monotouch) (< net46) (>= netstandard1.3) (< xamarinios) (< xamarinmac) (< xamarintvos) (< xamarinwatchos)
@@ -5078,3 +5091,7 @@ NUGET
       FSharp.Core (>= 4.1.17) - restriction: || (&& (>= net45) (< net46) (< netstandard1.6)) (&& (< net45) (>= netstandard1.6)) (&& (>= net46) (< netstandard1.6)) (>= net47)
       NETStandard.Library (>= 1.6.1) - restriction: && (< net45) (>= netstandard1.6)
       System.ValueTuple (>= 4.4) - restriction: || (&& (>= net45) (< net46) (< netstandard1.6)) (&& (< net45) (>= netstandard1.6)) (&& (>= net46) (< netstandard1.6)) (>= net47)
+    WindowsAzure.Storage (9.3.3) - restriction: >= netstandard2.0
+      Microsoft.Azure.KeyVault.Core (>= 1.0) - restriction: || (>= net45) (>= wp8)
+      NETStandard.Library (>= 1.6.1) - restriction: || (&& (< net45) (>= netstandard1.0) (< netstandard1.3) (< win8) (< wp8) (< wpa81)) (&& (< net45) (>= netstandard1.3) (< win8) (< wpa81))
+      Newtonsoft.Json (>= 10.0.2) - restriction: || (>= net45) (&& (>= netstandard1.0) (< netstandard1.3) (< win8)) (&& (< netstandard1.0) (>= win8)) (&& (>= netstandard1.3) (< win8)) (>= wp8) (>= wpa81)

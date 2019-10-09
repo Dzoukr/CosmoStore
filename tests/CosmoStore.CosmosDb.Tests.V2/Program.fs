@@ -29,7 +29,7 @@ let main _ =
             CorrelationId = None
             CausationId = None
             Name = "V2_Event_" + i.ToString()
-            Data = Data.json
+            Data = CosmoStore.Tests.Data.json
             Metadata = None
         } : EventWrite
     let events = [1..10] |> List.map getEvent

@@ -21,21 +21,21 @@ let private tryGetStreamMetadata (table:CloudTable) (streamId:string) =
     }
 
 
-let private appendEvents (table:CloudTable) (streamId:string) (expectedPosition:ExpectedPosition<_>) (events:EventWrite<_> list) =
+let private appendEvents (table:CloudTable) (streamId:string) (expectedVersion:ExpectedVersion<_>) (events:EventWrite<_> list) =
     
     task {
         
-        let! lastPosition, metadataEntity = 
+        let! lastVersion, metadataEntity = 
             task {
                 let! str = streamId |> tryGetStreamMetadata table
                 match str with
                 | Some (entity, metadata) ->
-                    return metadata.LastPosition, (Some entity)
+                    return metadata.LastVersion, (Some entity)
                 | None -> return 0L, None
             }
 
-        let nextPos = lastPosition + 1L        
-        do Validation.validatePosition streamId nextPos expectedPosition
+        let nextPos = lastVersion + 1L        
+        do Validation.validateVersion streamId nextPos expectedVersion
 
         let batchOperation = TableBatchOperation()
 
@@ -49,7 +49,7 @@ let private appendEvents (table:CloudTable) (streamId:string) (expectedPosition:
         match metadataEntity with
         | Some e ->
             e
-            |> Conversion.updateStreamEntity (lastPosition + (int64 events.Length))
+            |> Conversion.updateStreamEntity (lastVersion + (int64 events.Length))
             |> batchOperation.Replace
         | None -> 
             streamId
@@ -66,7 +66,7 @@ let private appendEvents (table:CloudTable) (streamId:string) (expectedPosition:
         |> Seq.filter Conversion.isEvent
         |> Seq.map Conversion.entityToEventRead
         |> Seq.toList
-        |> List.sortBy (fun x -> x.Position)
+        |> List.sortBy (fun x -> x.Version)
     }
 
 let rec private executeQuery (table:CloudTable) (query:TableQuery<_>) (token:TableContinuationToken) (values:Collections.Generic.List<_>) =
@@ -119,7 +119,7 @@ let private getEvents (table:CloudTable) streamId (eventsRead:EventsReadRange<_>
             results
             |> Seq.toList
             |> List.map Conversion.entityToEventRead
-            |> List.sortBy (fun x -> x.Position)
+            |> List.sortBy (fun x -> x.Version)
     }
 
 let private getEventsByCorrelationId (table:CloudTable) corrId  =
@@ -134,9 +134,9 @@ let private getEventsByCorrelationId (table:CloudTable) corrId  =
             |> List.sortBy (fun x -> x.CreatedUtc)
     }
 
-let private getEvent (table:CloudTable) streamId position =
+let private getEvent (table:CloudTable) streamId version =
     task {
-        let filter = EventsReadRange.PositionRange(position, position)
+        let filter = EventsReadRange.VersionRange(version, version)
         let! events = getEvents table streamId filter
         return events.Head
     }

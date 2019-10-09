@@ -58,3 +58,4 @@ group TestsV2
     source https://api.nuget.org/v3/index.json
     storage: none
     nuget CosmoStore.CosmosDb = 2.1.0
+    nuget CosmoStore.TableStorage = 2.0.1
