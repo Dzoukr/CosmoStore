@@ -98,7 +98,7 @@ let eventsTests (gen:TestDataGenerator<_>) eventStore =
                 do gen.GetEvent 1 |> eventStore.AppendEvent streamId ExpectedVersion.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
                 do gen.GetEvent 1 |> eventStore.AppendEvent streamId (ExpectedVersion.Exact(1L)) |> Async.AwaitTask |> Async.RunSynchronously |> ignore
             ) (fun ex -> 
-                (ex.Message.Contains("ESERROR_version_versionNOTMATCH") || ex.Message.Contains("ESERROR_VERSION_VERSIONNOTMATCH"))
+                (ex.Message.Contains("ESERROR_POSITION_POSITIONNOTMATCH") || ex.Message.Contains("ESERROR_VERSION_VERSIONNOTMATCH"))
                 |> isTrue
             )
         }
@@ -109,7 +109,7 @@ let eventsTests (gen:TestDataGenerator<_>) eventStore =
                 do gen.GetEvent 1 |> eventStore.AppendEvent streamId ExpectedVersion.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
                 do gen.GetEvent 1 |> eventStore.AppendEvent streamId ExpectedVersion.NoStream |> Async.AwaitTask |> Async.RunSynchronously |> ignore
             ) (fun ex -> 
-                (ex.Message.Contains("ESERROR_version_STREAMEXISTS") || ex.Message.Contains("ESERROR_VERSION_STREAMEXISTS"))
+                (ex.Message.Contains("ESERROR_POSITION_STREAMEXISTS") || ex.Message.Contains("ESERROR_VERSION_STREAMEXISTS"))
                 |> isTrue
             )
         }

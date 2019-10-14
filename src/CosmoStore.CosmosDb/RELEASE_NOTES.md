@@ -1,3 +1,8 @@
+### 3.0.0 - October 14 2019
+* Following v3 API (discussed in #27)
+* Added back compatibility on storage level (discussed in #27)
+* Show error version in exception message #26
+
 ### 2.1.0 - May 17 2019
 * Configurable collection name #25
 * Configurable initialization #23
