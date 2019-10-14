@@ -2,3 +2,4 @@ group Tests
     Expecto
     Expecto.VisualStudio.TestAdapter
     FSharp.Control.Reactive
+    Newtonsoft.Json

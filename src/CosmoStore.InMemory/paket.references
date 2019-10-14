@@ -1,3 +1,4 @@
 group InMemory
     FSharp.Core
     TaskBuilder.fs
+    Newtonsoft.Json

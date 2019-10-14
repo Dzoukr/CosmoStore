@@ -25,23 +25,30 @@ let private allEventsFilter streamId =
         TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.NotEqual, Conversion.streamRowKey)
     )
 
-let private withPositionGreaterOrEqual pos filter =
+let private versionOrPositionFilter qc ver =
+        TableQuery.CombineFilters(
+            TableQuery.GenerateFilterConditionForLong("Version", qc, ver),
+            TableOperators.Or,
+            TableQuery.GenerateFilterConditionForLong("Position", qc, ver)
+        )
+
+let private withVersionGreaterOrEqual ver filter =
     TableQuery.CombineFilters(
         filter,
         TableOperators.And,
-        TableQuery.GenerateFilterConditionForLong("Position", QueryComparisons.GreaterThanOrEqual, pos)
+        versionOrPositionFilter QueryComparisons.GreaterThanOrEqual ver
     )
-let private withPositionLessOrEqual pos filter =
+let private withVersionLessOrEqual ver filter =
     TableQuery.CombineFilters(
         filter,
         TableOperators.And,
-        TableQuery.GenerateFilterConditionForLong("Position", QueryComparisons.LessThanOrEqual, pos)
+        versionOrPositionFilter QueryComparisons.LessThanOrEqual ver
     )
 
 let allEventsFiltered streamId filter =
     let basicFilter = streamId |> allEventsFilter
     match filter with
     | AllEvents -> basicFilter |> toQuery
-    | FromPosition p -> basicFilter |> withPositionGreaterOrEqual p |> toQuery
-    | ToPosition p -> basicFilter |> withPositionLessOrEqual p |> toQuery
-    | PositionRange(f,t) -> basicFilter |> withPositionGreaterOrEqual f |> withPositionLessOrEqual t |> toQuery
+    | FromVersion p -> basicFilter |> withVersionGreaterOrEqual p |> toQuery
+    | ToVersion p -> basicFilter |> withVersionLessOrEqual p |> toQuery
+    | VersionRange(f,t) -> basicFilter |> withVersionGreaterOrEqual f |> withVersionLessOrEqual t |> toQuery

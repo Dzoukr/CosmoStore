@@ -1,3 +1,4 @@
 group TableStorage
+    FSharp.Core
     TaskBuilder.fs
     WindowsAzure.Storage

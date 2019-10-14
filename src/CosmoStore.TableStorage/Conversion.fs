@@ -7,19 +7,25 @@ open System.Collections.Generic
 
 let internal streamRowKey = "Stream"
 
+let private versionOrPosition (x:DynamicTableEntity) =
+    if x.Properties.ContainsKey("Position") then
+        x.Properties.["Position"].Int64Value.Value
+    else x.Properties.["Version"].Int64Value.Value
+        
+
 let entityToStream (x:DynamicTableEntity) = {
     Id = x.PartitionKey
     LastUpdatedUtc = x.Timestamp.UtcDateTime
-    LastPosition = x.Properties.["Position"].Int64Value.Value
+    LastVersion = x |> versionOrPosition
 }
 
-let updateStreamEntity lastPosition (x:DynamicTableEntity) =
-    x.Properties.["Position"] <- EntityProperty.GeneratePropertyForLong(lastPosition |> Nullable)
+let updateStreamEntity lastVersion (x:DynamicTableEntity) =
+    x.Properties.["Version"] <- EntityProperty.GeneratePropertyForLong(lastVersion |> Nullable)
     x
 
-let eventWriteToEntity streamId position (x:EventWrite) : DynamicTableEntity = 
+let eventWriteToEntity streamId version (x:EventWrite<_>) : DynamicTableEntity = 
     let entity = DynamicTableEntity(streamId, x.Id.ToString())
-    entity.Properties.Add("Position", EntityProperty.GeneratePropertyForLong(position |> Nullable))
+    entity.Properties.Add("Version", EntityProperty.GeneratePropertyForLong(version |> Nullable))
     entity.Properties.Add("Name", EntityProperty.GeneratePropertyForString(x.Name))
     
     match x.CorrelationId with
@@ -49,13 +55,13 @@ let isEvent (x:DynamicTableEntity) = x.RowKey <> streamRowKey
 
 let newStreamEntity streamId = DynamicTableEntity(streamId, "Stream")
 
-let entityToEventRead (x:DynamicTableEntity) : EventRead =
+let entityToEventRead (x:DynamicTableEntity) : EventRead<_,_> =
     {
         Id = x.RowKey |> Guid
         CorrelationId = x.Properties |> tryValue "CorrelationId" |> Option.map (fun x -> x.GuidValue.Value)
         CausationId = x.Properties |> tryValue "CausationId" |> Option.map (fun x -> x.GuidValue.Value)
         StreamId = x.PartitionKey
-        Position = x.Properties.["Position"].Int64Value.Value
+        Version = x |> versionOrPosition
         Name = x.Properties.["Name"].StringValue
         Data = x.Properties.["Data"].StringValue |> Serialization.stringToJToken
         Metadata = x.Properties |> tryValue "Metadata" |> Option.map (fun x -> Serialization.stringToJToken x.StringValue)

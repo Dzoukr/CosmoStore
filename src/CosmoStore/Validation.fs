@@ -1,10 +1,12 @@
 module CosmoStore.Validation
 
-let validatePosition streamId (nextPos:int64) = function
-    | ExpectedPosition.Any -> ()
-    | ExpectedPosition.NoStream ->
-        if nextPos > 1L then
-            failwithf "ESERROR_POSITION_STREAMEXISTS: Stream '%s' was expected to be empty, but contains %i events" streamId (nextPos - 1L)
-    | ExpectedPosition.Exact expectedPos ->
-        if nextPos <> expectedPos then
-            failwithf "ESERROR_POSITION_POSITIONNOTMATCH: Stream '%s' was expected to have next position %i, but has %i" streamId expectedPos nextPos
+let validateVersion streamId (nextVer:int64) = function
+    | ExpectedVersion.Any -> ()
+    | ExpectedVersion.NoStream ->
+        if nextVer > 1L then
+            let nvText = sprintf "[nextVersion=%i]" nextVer
+            failwithf "ESERROR_VERSION_STREAMEXISTS: %s Stream '%s' was expected to be empty, but contains %i events" nvText streamId (nextVer - 1L)
+    | ExpectedVersion.Exact expectedVer ->
+        if nextVer <> expectedVer then
+            let nvText = sprintf "[nextVersion=%i]" nextVer
+            failwithf "ESERROR_VERSION_VERSIONNOTMATCH: %s Stream '%s' was expected to have next version %i, but has %i" nvText streamId expectedVer nextVer

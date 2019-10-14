@@ -17,35 +17,33 @@ F# Event Store library for various storage providers (Cosmos DB, Table Storage, 
 
 ## Available storage providers
 
-| Storage Provider  | Package | Version | Author
-|---|---|---|---|
-| none (API definition only) | CosmoStore | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.svg?style=flat)](https://www.nuget.org/packages/CosmoStore/) | @dzoukr |
-| Azure Cosmos DB | CosmoStore.CosmosDb  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.CosmosDb.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.CosmosDb/) |@dzoukr |
-| Azure Table Storage | CosmoStore.TableStorage  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.TableStorage.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.TableStorage/) | @dzoukr |
-| Marten (Postgres) | CosmoStore.Marten  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.Marten.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.Marten/) | @kunjee
-| InMemory | CosmoStore.InMemory  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.InMemory.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.InMemory/) | @kunjee
+| Storage Provider | Payload type | Package | Version | Author
+|---|---|---|---|---|
+| none (API definition only) | - | CosmoStore | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.svg?style=flat)](https://www.nuget.org/packages/CosmoStore/) | @dzoukr |
+| Azure Cosmos DB | `Newtonsoft.Json` | CosmoStore.CosmosDb | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.CosmosDb.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.CosmosDb/) |@dzoukr |
+| Azure Table Storage | `Newtonsoft.Json` | CosmoStore.TableStorage  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.TableStorage.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.TableStorage/) | @dzoukr |
+| InMemory | `Newtonsoft.Json` | CosmoStore.InMemory  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.InMemory.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.InMemory/) | @kunjee
 
+## What is new in version 3
 
-## Breaking changes from versions < 2
-* CorrelationId is no longer required value (now `Guid option`)
-* CausationId (optional) is part of `EventRead` & `EventWrite` record (#9)
-* CosmoStore no longer contains any storage specific implementation (#10) - now you need to reference specific `CosmoStore.*` package.
-
+All previous version of CosmoStore were tightly connected with `Newtonsoft.Json` library and used its `JToken` as default payload for events. Since version 3.0 this does not apply anymore.
+Whole definition of `EventStore` was rewritten to be fully generic on payload and also on version level. Why? Some libraries not only use different payload than `JToken`, but possibly use
+different type for `Version` then `int64` (default before version 3). Authors of libraries using `CosmoStore` API now can use any payload and any version type that fits best their storage mechanism.
 
 ## Event store
 
 Event store (defined as F# record) is by design *storage agnostic* which means that no matter if you use Cosmos DB or Table Storage, the API is the same.
 
 ```fsharp
-type EventStore = {
-    AppendEvent : string -> ExpectedPosition -> EventWrite -> Task<EventRead>
-    AppendEvents : string -> ExpectedPosition -> EventWrite list -> Task<EventRead list>
-    GetEvent : string -> int64 -> Task<EventRead>
-    GetEvents : string -> EventsReadRange -> Task<EventRead list>
-    GetEventsByCorrelationId : Guid -> Task<EventRead list>
-    GetStreams : StreamsReadFilter -> Task<Stream list>
-    GetStream : string -> Task<Stream>
-    EventAppended : IObservable<EventRead>
+type EventStore<'payload,'version> = {
+    AppendEvent : StreamId -> ExpectedVersion<'version> -> EventWrite<'payload> -> Task<EventRead<'payload,'version>>
+    AppendEvents : StreamId -> ExpectedVersion<'version> -> EventWrite<'payload> list -> Task<EventRead<'payload,'version> list>
+    GetEvent : StreamId -> 'version -> Task<EventRead<'payload,'version>>
+    GetEvents : StreamId -> EventsReadRange<'version> -> Task<EventRead<'payload,'version> list>
+    GetEventsByCorrelationId : Guid -> Task<EventRead<'payload,'version> list>
+    GetStreams : StreamsReadFilter -> Task<Stream<'version> list>
+    GetStream : StreamId -> Task<Stream<'version>>
+    EventAppended : IObservable<EventRead<'payload,'version>>
 }
 ```
 
@@ -54,21 +52,16 @@ Each function on record is explained in separate chapter.
 
 ## Initializing Event store for Azure Cosmos DB
 
-Cosmos DB Event store has own configuration type that follows some specifics of database like *Request units* throughput or *collection capacity* (fixed, unlimited).
+Cosmos DB Event store has own configuration type that follows some specifics of database like *Request units* throughput.
 
 ```fsharp
-type Capacity =
-    | Fixed
-    | Unlimited
-
 type Configuration = {
     DatabaseName : string
-    ServiceEndpoint : Uri
-    AuthKey : string
-    Capacity : Capacity
+    ContainerName : string
+    ConnectionString : string
     Throughput : int
+    InitializeContainer : bool
 }
-
 ```
 
 > Note: If you don't know these terms check [official documentation](https://docs.microsoft.com/en-us/azure/cosmos-db/request-units)
@@ -119,31 +112,29 @@ let eventStore = myConfig |> TableStorage.EventStore.getEventStore
 Events are data structures you want to write (append) to some "shelf" also known as *Stream*. Event for writing is defined as this type:
 
 ```fsharp
-type EventWrite = {
+type EventWrite<'payload> = {
     Id : Guid
     CorrelationId : Guid option
     CausationId : Guid option
     Name : string
-    Data : JToken
-    Metadata : JToken option
+    Data : 'payload
+    Metadata : 'payload option
 }
 ```
 
-> Note: Newtonsoft.Json library (.NET industry standard) JToken is used as default type for data and metadata.
-
-When writing Events to some Stream, you usually expect them to be written at some position hence you must specify *optimistic concurrency* strategy. For this purpose the type `ExpectedPosition` exists:
+When writing Events to some Stream, you usually expect them to be written having some version hence you must specify *optimistic concurrency* strategy. For this purpose the type `ExpectedVersion` exists:
 
 ```fsharp
-type ExpectedPosition =
-    | Any // we don't care
-    | NoStream // no event must exist in that stream
-    | Exact of int64 // exact position of next event
+type ExpectedVersion<'version> =
+    | Any
+    | NoStream
+    | Exact of 'version
 ```
 
 There are two defined functions to write Event to Stream. `AppendEvent` for writing single Event and `AppendEvents` to write more Events.
 
 ```fsharp
-let expected = ExpectedPosition.NoStream // we are expecting brand new stream
+let expected = ExpectedVersion.NoStream // we are expecting brand new stream
 let eventToWrite = ... // get new event to be written
 let streamId = "MyAmazingStream"
 
@@ -151,7 +142,7 @@ let streamId = "MyAmazingStream"
 eventToWrite |> eventStore.AppendEvent streamId expected 
 
 let moreEventsToWrite = ... // get list of another events
-let newExpected = ExpectedPosition.Exact 2L // we are expecting next event to be on 2nd position
+let newExpected = ExpectedVersion.Exact 2L // we are expecting next event to be in 2nd version
 
 // writing another N events
 moreEventsToWrite |> eventStore.AppendEvents streamId newExpected
@@ -165,20 +156,20 @@ If everything goes well, you will get back list (in *Task*) of written events (t
 When reading back Events from Stream, you'll a little bit more information than you wrote:
 
 ```fsharp
-type EventRead = {
+type EventRead<'payload,'version> = {
     Id : Guid
     CorrelationId : Guid option
     CausationId : Guid option
-    StreamId : string
-    Position : int64
+    StreamId : StreamId
+    Version: 'version
     Name : string
-    Data : JToken
-    Metadata : JToken option
+    Data : 'payload
+    Metadata : 'payload option
     CreatedUtc : DateTime
 }
 ```
 
-You have two options how to read back stored Events. You can read single Event by Position using `GetEvent` function:
+You have two options how to read back stored Events. You can read single Event by Version using `GetEvent` function:
 
 
 ```fsharp
@@ -190,7 +181,7 @@ Or read list of Events using `GetEvents` function. For such reading you need to 
 
 ```fsharp
 // return 1st-2nd Event from Stream
-let firstTwoEvents = EventsReadRange.PositionRange(1,2) |> eventStore.GetEvents "MyAmazingStream"
+let firstTwoEvents = EventsReadRange.VersionRange(1,2) |> eventStore.GetEvents "MyAmazingStream"
 
 // return all events
 let allEvents = EventsReadRange.AllEvents |> eventStore.GetEvents "MyAmazingStream"
@@ -199,11 +190,11 @@ let allEvents = EventsReadRange.AllEvents |> eventStore.GetEvents "MyAmazingStre
 To fully understand what are the possibilities have a look at `EventsReadRange` definition:
 
 ```fsharp
-type EventsReadRange =
+type EventsReadRange<'version> =
     | AllEvents
-    | FromPosition of int64
-    | ToPosition of int64
-    | PositionRange of fromPosition:int64 * toPosition:int64
+    | FromVersion of 'version
+    | ToVersion of 'version
+    | VersionRange of fromVersion:'version * toVersion:'version
 ```
 
 If you are interested in Events based on stored `CorrelationId`, you can use function introduced in version 2 - `GetEventsByCorrelationId`
@@ -220,7 +211,7 @@ Each Stream has own metadata:
 ```fsharp
 type Stream = {
     Id : string
-    LastPosition : int64
+    LastVersion : int64
     LastUpdatedUtc : DateTime
 }
 ```

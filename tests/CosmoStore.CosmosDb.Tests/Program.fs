@@ -1,39 +1,43 @@
 module CosmoStore.CosmosDb.Tests.Program
 
 open System
+open System.Diagnostics
 open Expecto
 open Expecto.Logging
 open CosmoStore.Tests
 open CosmoStore.CosmosDb
-open Microsoft.Azure.Documents.Client
+open Microsoft.Azure.Cosmos
 
-let collectionName = "MyEvents"
-
-let private config = 
+let private v3config = 
     CosmoStore.CosmosDb.Configuration.CreateDefault 
-        (Uri "https://localhost:8081") 
-        "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
-    |> fun cfg -> { cfg with DatabaseName = "CosmoStoreTests"; Throughput = 10000; CollectionName = collectionName }
+        "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
+    |> fun cfg -> { cfg with DatabaseName = "CosmoStoreTests"; Throughput = 10000; ContainerName = "MyEvents" }
 
-let private getCleanEventStore() =
-    let client = new DocumentClient(config.ServiceEndpoint, config.AuthKey)
-    try
-        do client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri(config.DatabaseName, collectionName)) 
-        |> Async.AwaitTask 
-        |> Async.RunSynchronously 
-        |> ignore
-    with ex -> ()
+let private v2config = { v3config with ContainerName = "MyV2Events" } 
+
+let private getEventStore cleanup config =
+    let client = new CosmosClient(config.ConnectionString)
+    if cleanup then
+        try
+            client.GetContainer(config.DatabaseName, config.ContainerName)
+            |> (fun x -> x.DeleteContainerAsync())
+            |> Async.AwaitTask 
+            |> Async.RunSynchronously 
+            |> ignore
+        with ex -> ()
     config |> EventStore.getEventStore
     
 let testConfig = 
     { Expecto.Tests.defaultConfig with 
-        parallelWorkers = 2
+        parallelWorkers = 4
         verbosity = LogLevel.Debug }
-
-let cfg = Domain.defaultTestConfiguration getCleanEventStore
 
 [<EntryPoint>]
 let main _ = 
-    (cfg, "Cosmos DB") 
-    |> AllTests.getTests 
-    |> runTests testConfig
+    // run v3 tests
+    AllTests.getTests "Cosmos DB - V3" Generator.defaultGenerator (getEventStore true v3config) |> runTests testConfig |> ignore
+    // write "old" events
+    Process.Start("dotnet", "run -p tests/CosmoStore.CosmosDb.Tests.V2").WaitForExit()
+    // run v2 tests
+    AllTests.getTests "Cosmos DB - V2" Generator.defaultGenerator (getEventStore false v2config) |> runTests testConfig |> ignore
+    0

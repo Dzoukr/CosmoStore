@@ -1,36 +1,37 @@
 namespace CosmoStore.InMemory
+
 open System
 open CosmoStore
 open FSharp.Control.Tasks.V2
+open Newtonsoft.Json.Linq
 open System.Reactive.Linq
 open System.Reactive.Concurrency
 
-
 module EventStore =
 
-    type StreamData = {
-        StreamStore: StreamStoreType
-        EventStore: EventStoreType
+    type StreamData<'payload, 'version> = {
+        StreamStore: StreamStoreType<'version>
+        EventStore: EventStoreType<'payload, 'version>
         StreamId: string
-        ExpectedPosition: ExpectedPosition
-        EventWrites: EventWrite list
+        ExpectedVersion: ExpectedVersion<'version>
+        EventWrites: EventWrite<'payload> list
     }
-    type AgentResponse = | EventReads of EventRead list | Error of exn
+    type AgentResponse<'payload, 'version> = | EventReads of EventRead<'payload, 'version> list | Error of exn
 
-    type StreamMessage = Data of StreamData * AsyncReplyChannel<AgentResponse>
+    type StreamMessage<'payload, 'version> = Data of StreamData<'payload, 'version> * AsyncReplyChannel<AgentResponse<'payload, 'version>>
 
-    let agent =
-            let processEvents (message: StreamData) =
-                let lastPosition, metadataEntity =
+    let agent : MailboxProcessor<StreamMessage<JToken, int64>> =
+            let processEvents (message: StreamData<_,_>) =
+                let lastVersion, metadataEntity =
                     let res = message.StreamStore.ContainsKey(message.StreamId) |> fun x -> if x then Some message.StreamStore.[message.StreamId] else None
                     match res with
                     | Some r ->
-                        r.LastPosition, Some r
+                        r.LastVersion, Some r
                     | None -> 0L, None
 
-                let nextPos = lastPosition + 1L
+                let nextPos = lastVersion + 1L
 
-                do Validation.validatePosition message.StreamId nextPos message.ExpectedPosition
+                do Validation.validateVersion message.StreamId nextPos message.ExpectedVersion
 
                 let ops =
                     message.EventWrites
@@ -39,15 +40,15 @@ module EventStore =
                 let updatedStream =
                     match metadataEntity with
                     | Some s ->
-                        { s with LastPosition = (s.LastPosition + (int64 message.EventWrites.Length)); LastUpdatedUtc = DateTime.UtcNow }
+                        { s with LastVersion = (s.LastVersion + (int64 message.EventWrites.Length)); LastUpdatedUtc = DateTime.UtcNow }
 
                     | None ->
-                        { Id = message.StreamId; LastPosition = (int64 message.EventWrites.Length); LastUpdatedUtc = DateTime.UtcNow }
+                        { Id = message.StreamId; LastVersion = (int64 message.EventWrites.Length); LastUpdatedUtc = DateTime.UtcNow }
                 message.StreamStore.AddOrUpdate(updatedStream.Id, updatedStream, fun _ _ -> updatedStream) |> ignore
                 ops |> List.map (fun x -> message.EventStore.TryAdd(x.Id, x)) |> List.fold (fun acc x -> x && acc) true |> ignore
                 ops
 
-            MailboxProcessor<StreamMessage>.Start(fun inbox ->
+            MailboxProcessor<StreamMessage<_,_>>.Start(fun inbox ->
 
             let rec loop() =
                 async {
@@ -64,13 +65,13 @@ module EventStore =
             loop()
         )
 
-    let private appendEvents (streamStore) (eventStore) (streamId: string) (expectedPosition: ExpectedPosition) (events: EventWrite list) =
+    let private appendEvents (streamStore) (eventStore) (streamId: string) (expectedVersion: ExpectedVersion<_>) (events: EventWrite<_> list) =
         task {
             let message = {
                 StreamStore = streamStore
                 EventStore = eventStore
                 StreamId = streamId
-                ExpectedPosition = expectedPosition
+                ExpectedVersion = expectedVersion
                 EventWrites = events
             }
             let getEventReads() =
@@ -80,30 +81,30 @@ module EventStore =
                 | Error ex -> raise ex
             return getEventReads()
         }
-    let private getEvents (store: EventStoreType) (streamId: string) (eventsRead: EventsReadRange) = task {
+    let private getEvents (store: EventStoreType<_,_>) (streamId: string) (eventsRead: EventsReadRange<_>) = task {
         let fetch =
             let currentStreamEvents = store.Values |> Seq.filter (fun x -> x.StreamId = streamId)
             match eventsRead with
             | AllEvents -> currentStreamEvents
-            | FromPosition f -> currentStreamEvents |> Seq.filter (fun x -> x.Position >= f)
-            | ToPosition t -> currentStreamEvents |> Seq.filter (fun x -> x.Position > 0L && x.Position <= t)
-            | PositionRange(f, t) -> currentStreamEvents |> Seq.filter (fun x -> x.Position >= f && x.Position <= t)
-        let res = fetch |> Seq.sortBy (fun x -> x.Position) |> Seq.toList
+            | FromVersion f -> currentStreamEvents |> Seq.filter (fun x -> x.Version >= f)
+            | ToVersion t -> currentStreamEvents |> Seq.filter (fun x -> x.Version > 0L && x.Version <= t)
+            | VersionRange(f, t) -> currentStreamEvents |> Seq.filter (fun x -> x.Version >= f && x.Version <= t)
+        let res = fetch |> Seq.sortBy (fun x -> x.Version) |> Seq.toList
         return res
     }
-    let private getEvent store streamId position = task {
-        let filter = EventsReadRange.PositionRange(position, position + 1L)
+    let private getEvent store streamId version = task {
+        let filter = EventsReadRange.VersionRange(version, version + 1L)
         let! events = getEvents store streamId filter
         return events.Head
     }
 
-    let private getEventsByCorrelationId (store: EventStoreType) corrId =
+    let private getEventsByCorrelationId (store: EventStoreType<_,_>) corrId =
         task {
             let res = store.Values |> Seq.filter (fun x -> x.CorrelationId = Some corrId)
             return (res |> Seq.toList)
         }
 
-    let private getStreams (store: StreamStoreType) streamsRead = task {
+    let private getStreams (store: StreamStoreType<_>) streamsRead = task {
         let res =
             match streamsRead with
             | AllStreams -> store.Values |> Seq.toList
@@ -113,16 +114,16 @@ module EventStore =
         return (res |> Seq.sortBy(fun x -> x.Id) |> Seq.toList)
      }
 
-    let private getStream (store: StreamStoreType) streamId = task {
+    let private getStream (store: StreamStoreType<_>) streamId = task {
         let res = store.ContainsKey(streamId)
         if res then return store.[streamId]
         else return failwithf "SessionId %s is not present in database" streamId
     }
-    let getEventStore (configuration: Configuration) =
+    let getEventStore (configuration: Configuration<_,_>) =
         let streamStore = configuration.InMemoryStreams
         let eventStore = configuration.InMemoryEvents
 
-        let eventAppended = Event<EventRead>()
+        let eventAppended = Event<EventRead<_,_>>()
 
 
         {

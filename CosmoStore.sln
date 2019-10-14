@@ -23,6 +23,10 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.InMemory", "src\
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.InMemory.Tests", "tests\CosmoStore.InMemory.Tests\CosmoStore.InMemory.Tests.fsproj", "{A11AC6EB-9E23-4E9F-87F0-99EF38F0779B}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.CosmosDb.Tests.V2", "tests\CosmoStore.CosmosDb.Tests.V2\CosmoStore.CosmosDb.Tests.V2.fsproj", "{FE7B0AD7-2BF3-422B-8F34-1A6EA9D981FE}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.TableStorage.Tests.V2", "tests\CosmoStore.TableStorage.Tests.V2\CosmoStore.TableStorage.Tests.V2.fsproj", "{049F25E8-E168-4392-B5BC-D728503AA669}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +73,14 @@ Global
 		{A11AC6EB-9E23-4E9F-87F0-99EF38F0779B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A11AC6EB-9E23-4E9F-87F0-99EF38F0779B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A11AC6EB-9E23-4E9F-87F0-99EF38F0779B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE7B0AD7-2BF3-422B-8F34-1A6EA9D981FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE7B0AD7-2BF3-422B-8F34-1A6EA9D981FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE7B0AD7-2BF3-422B-8F34-1A6EA9D981FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE7B0AD7-2BF3-422B-8F34-1A6EA9D981FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{049F25E8-E168-4392-B5BC-D728503AA669}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{049F25E8-E168-4392-B5BC-D728503AA669}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{049F25E8-E168-4392-B5BC-D728503AA669}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{049F25E8-E168-4392-B5BC-D728503AA669}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
