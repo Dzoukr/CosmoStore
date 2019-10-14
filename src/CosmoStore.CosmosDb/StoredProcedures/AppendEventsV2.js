@@ -19,10 +19,10 @@
             return;
         }
         if (expectedPosition.mode == "noStream" && nextPosition > 1) {
-            throw "ESERROR_POSITION_STREAMEXISTS";
+            throw "ESERROR_VERSION_STREAMEXISTS [nextVersion="+nextPosition+"]";
         }
         if (expectedPosition.mode == "exact" && nextPosition != expectedPosition.position) {
-            throw "ESERROR_POSITION_POSITIONNOTMATCH";
+            throw "ESERROR_VERSION_VERSIONNOTMATCH [nextVersion="+nextPosition+"]";
         }
     }
 

@@ -19,10 +19,10 @@
             return;
         }
         if (expectedVersion.mode == "noStream" && nextVersion > 1) {
-            throw "ESERROR_VERSION_STREAMEXISTS";
+            throw "ESERROR_VERSION_STREAMEXISTS [nextVersion="+nextVersion+"]";
         }
         if (expectedVersion.mode == "exact" && nextVersion != expectedVersion.version) {
-            throw "ESERROR_VERSION_VERSIONNOTMATCH";
+            throw "ESERROR_VERSION_VERSIONNOTMATCH [nextVersion="+nextVersion+"]";
         }
     }
 
