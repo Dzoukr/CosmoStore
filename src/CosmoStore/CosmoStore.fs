@@ -2,18 +2,19 @@ namespace CosmoStore
 
 open System
 open System.Threading.Tasks
-open Newtonsoft.Json.Linq
 
-type ExpectedPosition =
+type StreamId = string
+
+type ExpectedVersion<'version> =
     | Any
     | NoStream
-    | Exact of int64
+    | Exact of 'version
 
-type EventsReadRange =
+type EventsReadRange<'version> =
     | AllEvents
-    | FromPosition of int64
-    | ToPosition of int64
-    | PositionRange of fromPosition:int64 * toPosition:int64
+    | FromVersion of 'version
+    | ToVersion of 'version
+    | VersionRange of fromVersion:'version * toVersion:'version
 
 type StreamsReadFilter =
     | AllStreams
@@ -21,42 +22,40 @@ type StreamsReadFilter =
     | EndsWith of string
     | Contains of string
 
-[<CLIMutable>]
-type EventRead = {
+type EventRead<'payload,'version> = {
     Id : Guid
     CorrelationId : Guid option
     CausationId : Guid option
-    StreamId : string
-    Position: int64
+    StreamId : StreamId
+    Version: 'version
     Name : string
-    Data : obj
-    Metadata : obj option
+    Data : 'payload
+    Metadata : 'payload option
     CreatedUtc : DateTime
 }
 
-type EventWrite = {
+type EventWrite<'payload> = {
     Id : Guid
     CorrelationId : Guid option
     CausationId : Guid option
     Name : string
-    Data : obj
-    Metadata : obj option
+    Data : 'payload
+    Metadata : 'payload option
 }
 
-[<CLIMutable>]
-type Stream = {
-    Id : string
-    LastPosition : int64
+type Stream<'version> = {
+    Id : StreamId
+    LastVersion : 'version
     LastUpdatedUtc: DateTime
 }
 
-type EventStore = {
-    AppendEvent : string -> ExpectedPosition -> EventWrite -> Task<EventRead>
-    AppendEvents : string -> ExpectedPosition -> EventWrite list -> Task<EventRead list>
-    GetEvent : string -> int64 -> Task<EventRead>
-    GetEvents : string -> EventsReadRange -> Task<EventRead list>
-    GetEventsByCorrelationId : Guid -> Task<EventRead list>
-    GetStreams : StreamsReadFilter -> Task<Stream list>
-    GetStream : string -> Task<Stream>
-    EventAppended : IObservable<EventRead>
+type EventStore<'payload,'version> = {
+    AppendEvent : StreamId -> ExpectedVersion<'version> -> EventWrite<'payload> -> Task<EventRead<'payload,'version>>
+    AppendEvents : StreamId -> ExpectedVersion<'version> -> EventWrite<'payload> list -> Task<EventRead<'payload,'version> list>
+    GetEvent : StreamId -> 'version -> Task<EventRead<'payload,'version>>
+    GetEvents : StreamId -> EventsReadRange<'version> -> Task<EventRead<'payload,'version> list>
+    GetEventsByCorrelationId : Guid -> Task<EventRead<'payload,'version> list>
+    GetStreams : StreamsReadFilter -> Task<Stream<'version> list>
+    GetStream : StreamId -> Task<Stream<'version>>
+    EventAppended : IObservable<EventRead<'payload,'version>>
 }

@@ -1,3 +1,8 @@
+### 3.0.0 - October 14 2019
+* API refactored to be more generic - introduced payload and position types (discussed in #27)
+* Position replaced with Version (discussed in #27)
+* Show error version in exception message #26
+
 ### 2.1.0 - May 14 2019
 * Added helper functions for validation and conversion
 

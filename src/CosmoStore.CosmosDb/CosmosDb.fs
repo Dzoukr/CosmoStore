@@ -2,6 +2,25 @@ namespace CosmoStore.CosmosDb
 
 open System
 
+type internal StorageVersion =
+    | Version2
+    | Version3
+
+module internal StorageVersion =
+    let getStoredProcedureName (strategy:StorageVersion) =
+        match strategy with
+        | Version2 -> "AppendEventsV2.js"
+        | Version3 -> "AppendEventsV3.js"
+    let getPositionOrVersion (strategy:StorageVersion) =
+        match strategy with
+        | Version2 -> "position"
+        | Version3 -> "version"
+    let getLastPositionOrLastVersion (strategy:StorageVersion) =
+        match strategy with
+        | Version2 -> "lastPosition"
+        | Version3 -> "lastVersion"
+    
+
 module internal Throughput =
     let min = 400
     let max = 1_000_000
@@ -14,18 +33,16 @@ module internal Throughput =
 
 type Configuration = {
     DatabaseName : string
-    CollectionName : string
-    ServiceEndpoint : Uri
-    AuthKey : string
+    ContainerName : string
+    ConnectionString : string
     Throughput : int
-    InitializeCollection : bool
+    InitializeContainer : bool
 }
 with
-    static member CreateDefault serviceEndpoint authKey = {
+    static member CreateDefault connectionString = {
         DatabaseName = "EventStore"
-        CollectionName = "Events"
-        ServiceEndpoint = serviceEndpoint
-        AuthKey = authKey
+        ContainerName = "Events"
+        ConnectionString = connectionString
         Throughput = Throughput.min
-        InitializeCollection = true
+        InitializeContainer = true
     }

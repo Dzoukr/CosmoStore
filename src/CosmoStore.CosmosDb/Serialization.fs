@@ -43,12 +43,13 @@ let deserialize<'a> json = JsonConvert.DeserializeObject<'a>(json, settings)
 let objectFromJToken<'a> (token:JToken) = token.ToString() |> deserialize<'a>
 let objectToJToken obj = obj |> serialize |> JToken.Parse
 
-let expectedPositionToJObject (x:ExpectedPosition) = 
+let internal expectedVersionToJObject (version:StorageVersion) (x:ExpectedVersion<int64>) = 
+    let positionOrVersion = version |> StorageVersion.getPositionOrVersion
     let json = JObject()
     match x with
     | Any -> json.["mode"] <- JValue("any")
     | NoStream -> json.["mode"] <- JValue("noStream")
     | Exact v -> 
         json.["mode"] <- JValue("exact")
-        json.["position"] <- JValue(v)
+        json.[positionOrVersion] <- JValue(v)
     json

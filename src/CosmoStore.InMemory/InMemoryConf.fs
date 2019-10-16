@@ -3,10 +3,10 @@ open System
 open System.Collections.Concurrent
 open CosmoStore
 
-type StreamStoreType = ConcurrentDictionary<string, Stream>
-type EventStoreType = ConcurrentDictionary<Guid, EventRead>
+type StreamStoreType<'position> = ConcurrentDictionary<string, Stream<'position>>
+type EventStoreType<'payload, 'position> = ConcurrentDictionary<Guid, EventRead<'payload, 'position>>
 
-type Configuration = {
-    InMemoryStreams : StreamStoreType
-    InMemoryEvents :  EventStoreType
+type Configuration<'payload, 'position> = {
+    InMemoryStreams : StreamStoreType<'position>
+    InMemoryEvents :  EventStoreType<'payload, 'position>
 }

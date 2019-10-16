@@ -2,14 +2,14 @@
 
 open System
 open CosmoStore
-open Expecto
 open Domain
+open Expecto
 open Domain.ExpectoHelpers
 open System.Threading.Tasks
 
-let private withCorrelationId i (e:EventWrite) = { e with CorrelationId = Some i }
+let private withCorrelationId i (e:EventWrite<_>) = { e with CorrelationId = Some i }
 
-let eventsTests (cfg:TestConfiguration) = 
+let eventsTests (gen:TestDataGenerator<_>) eventStore = 
     testList "Events" [
         
         // testTask "Append events parallel" {
@@ -19,7 +19,7 @@ let eventsTests (cfg:TestConfiguration) =
         //         return! 
         //             [1..10] 
         //             |> List.map cfg.GetEvent 
-        //             |> cfg.Store.AppendEvents streamId Any
+        //             |> eventStore.AppendEvents streamId Any
         //             |> Async.AwaitTask
         //     }
             
@@ -35,117 +35,120 @@ let eventsTests (cfg:TestConfiguration) =
         //     let streamId = cfg.GetStreamId()
         //     let event = cfg.GetEvent 0
         //     for _ in 1..2 do
-        //         do! event |> cfg.Store.AppendEvent streamId Any
+        //         do! event |> eventStore.AppendEvent streamId Any
         // }
 
         testTask "Appends event" {
-            let streamId = cfg.GetStreamId()
-            let! e = cfg.GetEvent 0 |> cfg.Store.AppendEvent streamId Any
-            equal e.Position 1L
+            let streamId = gen.GetStreamId()
+            let! e = gen.GetEvent 0 |> eventStore.AppendEvent streamId Any
+            equal e.Version 1L
         }
 
-        testTask "Append events" {
-            let streamId = cfg.GetStreamId()
-
-            let! events = [1..99] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId ExpectedPosition.Any
+        testTask "Append 100 events" {
+            let streamId = gen.GetStreamId()
+            
+            let! events = [1..99] |> List.map gen.GetEvent |> eventStore.AppendEvents streamId ExpectedVersion.Any
             areAscending events
             areNewer events
         }
 
         testTask "Gets event" {
-            let streamId = cfg.GetStreamId()
-            do! [1..10] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId Any
-            let! event = cfg.Store.GetEvent streamId 3L
-            equal event.Position 3L
+            let streamId = gen.GetStreamId()
+            do! [1..10] |> List.map gen.GetEvent |> eventStore.AppendEvents streamId Any
+            let! event = eventStore.GetEvent streamId 3L
+            equal event.Version 3L
             equal event.Name "Created_3"
         }
 
         testTask "Get events (all)" {
-            let streamId = cfg.GetStreamId()
-            do! [1..10] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId Any
-            let! (events : EventRead list) = cfg.Store.GetEvents streamId EventsReadRange.AllEvents
+            let streamId = gen.GetStreamId()
+            do! [1..10] |> List.map gen.GetEvent |> eventStore.AppendEvents streamId Any
+            let! (events : EventRead<_,_> list) = eventStore.GetEvents streamId EventsReadRange.AllEvents
             equal 10 events.Length
             areAscending events
         }
 
-        testTask "Get events (from position)" {
-            let streamId = cfg.GetStreamId()
-            do! [1..10] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId Any
-            let! (events : EventRead list) = cfg.Store.GetEvents streamId (EventsReadRange.FromPosition(6L))
+        testTask "Get events (from version)" {
+            let streamId = gen.GetStreamId()
+            do! [1..10] |> List.map gen.GetEvent |> eventStore.AppendEvents streamId Any
+            let! (events : EventRead<_,_> list) = eventStore.GetEvents streamId (EventsReadRange.FromVersion(6L))
             equal 5 events.Length
             areAscending events 
         }
+        
+        testTask "Get events (to version)" {
+            let streamId = gen.GetStreamId()
+            do! [1..10] |> List.map gen.GetEvent |> eventStore.AppendEvents streamId Any
+            let! (events : EventRead<_,_> list) = eventStore.GetEvents streamId (EventsReadRange.ToVersion(5L))
+            equal 5 events.Length
+            areAscending events 
+        }
+        
+        testTask "Get events (version range)" {
+            let streamId = gen.GetStreamId()
+            do! [1..10] |> List.map gen.GetEvent |> eventStore.AppendEvents streamId Any
+            let! (events : EventRead<_,_> list) = eventStore.GetEvents streamId (EventsReadRange.VersionRange(5L,7L))
+            equal 3 events.Length
+            areAscending events 
+            equal 5L events.Head.Version
+        }
 
-        testTask "Get events (to position)" {
-                    let streamId = cfg.GetStreamId()
-                    do! [1..10] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId Any
-                    let! (events : EventRead list) = cfg.Store.GetEvents streamId (EventsReadRange.ToPosition(5L))
-                    equal 5 events.Length
-                    areAscending events 
-                }
-        testTask "Get events (position range)" {
-                    let streamId = cfg.GetStreamId()
-                    do! [1..10] |> List.map cfg.GetEvent |> cfg.Store.AppendEvents streamId Any
-                    let! (events : EventRead list) = cfg.Store.GetEvents streamId (EventsReadRange.PositionRange(5L,7L))
-                    equal 3 events.Length
-                    areAscending events 
-                    equal 5L events.Head.Position
-                }
-
-        testTask "Fails to append to existing position" {
+        testTask "Fails to append to existing version" {
             Expect.throwsC (fun _ -> 
-                let streamId = cfg.GetStreamId()
-                do cfg.GetEvent 1 |> cfg.Store.AppendEvent streamId ExpectedPosition.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
-                do cfg.GetEvent 1 |> cfg.Store.AppendEvent streamId (ExpectedPosition.Exact(1L)) |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+                let streamId = gen.GetStreamId()
+                do gen.GetEvent 1 |> eventStore.AppendEvent streamId ExpectedVersion.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+                do gen.GetEvent 1 |> eventStore.AppendEvent streamId (ExpectedVersion.Exact(1L)) |> Async.AwaitTask |> Async.RunSynchronously |> ignore
             ) (fun ex -> 
-                isTrue <| ex.Message.Contains("ESERROR_POSITION_POSITIONNOTMATCH")
+                (ex.Message.Contains("ESERROR_POSITION_POSITIONNOTMATCH") || ex.Message.Contains("ESERROR_VERSION_VERSIONNOTMATCH"))
+                |> isTrue
             )
         }
 
         testTask "Fails to append to existing stream if is not expected to exist" {
             Expect.throwsC (fun _ -> 
-                let streamId = cfg.GetStreamId()
-                do cfg.GetEvent 1 |> cfg.Store.AppendEvent streamId ExpectedPosition.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
-                do cfg.GetEvent 1 |> cfg.Store.AppendEvent streamId ExpectedPosition.NoStream |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+                let streamId = gen.GetStreamId()
+                do gen.GetEvent 1 |> eventStore.AppendEvent streamId ExpectedVersion.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+                do gen.GetEvent 1 |> eventStore.AppendEvent streamId ExpectedVersion.NoStream |> Async.AwaitTask |> Async.RunSynchronously |> ignore
             ) (fun ex -> 
-                isTrue <| ex.Message.Contains("ESERROR_POSITION_STREAMEXISTS")
+                (ex.Message.Contains("ESERROR_POSITION_STREAMEXISTS") || ex.Message.Contains("ESERROR_VERSION_STREAMEXISTS"))
+                |> isTrue
             )
         }
 
         testTask "Appending no events does not affect stream metadata" {
-            let streamId = cfg.GetStreamId()
+            let streamId = gen.GetStreamId()
             // append single event
-            do! 0 |> cfg.GetEvent |> cfg.Store.AppendEvent streamId (ExpectedPosition.Exact(1L))
-            let! stream = cfg.Store.GetStream streamId
-            do! List.empty |> cfg.Store.AppendEvents streamId ExpectedPosition.Any
-            let! streamAfterAppend = cfg.Store.GetStream streamId
+            do! 0 |> gen.GetEvent |> eventStore.AppendEvent streamId (ExpectedVersion.Exact(1L))
+            let! stream = eventStore.GetStream streamId
+            do! List.empty |> eventStore.AppendEvents streamId ExpectedVersion.Any
+            let! streamAfterAppend = eventStore.GetStream streamId
             equal stream streamAfterAppend
         }
 
         testTask "Appending 1000 events can be read back" {
-            let streamId = cfg.GetStreamId()
-
+            let streamId = gen.GetStreamId()
+        
             [0..999]
-            |> List.map cfg.GetEvent
+            |> List.map gen.GetEvent
             |> List.chunkBySize 99
             |> List.iter (fun evns -> 
-                evns |> cfg.Store.AppendEvents streamId ExpectedPosition.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+                evns |> eventStore.AppendEvents streamId ExpectedVersion.Any |> Async.AwaitTask |> Async.RunSynchronously |> ignore
             )
 
-            let! (stream : Stream) = cfg.Store.GetStream streamId
-            equal 1000L stream.LastPosition
+            let! (stream : Stream<_>) = eventStore.GetStream streamId
+            equal 1000L stream.LastVersion
 
-            let! (evntsBack : EventRead list) = cfg.Store.GetEvents streamId EventsReadRange.AllEvents
+            let! (evntsBack : EventRead<_,_> list) = eventStore.GetEvents streamId EventsReadRange.AllEvents
             equal 1000 evntsBack.Length
         }
 
         testTask "Can read events by correlation ID" {
             let addEventToStream corrId i =
                 [1..10] 
-                |> List.map cfg.GetEvent 
+                |> List.map gen.GetEvent 
                 |> List.map (withCorrelationId corrId)
-                |> cfg.Store.AppendEvents (sprintf "CORR_%i" i) ExpectedPosition.Any
-
+                |> eventStore.AppendEvents (sprintf "CORR_%i" i) ExpectedVersion.Any
+            
             let corrId = Guid.NewGuid()
             for i in 1..3 do
                 do! addEventToStream corrId i
@@ -154,75 +157,66 @@ let eventsTests (cfg:TestConfiguration) =
             for i in 1..3 do
                 do! addEventToStream differentCorrId i
 
-            let! (events : EventRead list) = cfg.Store.GetEventsByCorrelationId corrId
+            let! (events : EventRead<_,_> list) = eventStore.GetEventsByCorrelationId corrId
             let uniqueStreams = events |> List.map (fun x -> x.StreamId) |> List.distinct |> List.sort
             equal 30 events.Length
             equal ["CORR_1";"CORR_2";"CORR_3"] uniqueStreams
         }
     ]
 
-let streamsTestsSequenced (cfg:TestConfiguration) =
+let streamsTests (gen:TestDataGenerator<_>) eventStore =
     testList "Streams" [
 
         testTask "Get streams (all)" {
-
-            let store = cfg.GetEmptyStore()
-
+            let prefix = Guid.NewGuid().ToString("N")
             let addEventToStream i =
                 [1..99] 
-                |> List.map cfg.GetEvent 
-                |> store.AppendEvents (sprintf "A_%i" i) ExpectedPosition.Any
+                |> List.map gen.GetEvent 
+                |> eventStore.AppendEvents (sprintf "%s_%i" prefix i) ExpectedVersion.Any
             
             for i in 1..3 do
                 do! addEventToStream i    
-            let! (streams : Stream list) = store.GetStreams StreamsReadFilter.AllStreams
-            equal ["A_1";"A_2";"A_3"] (streams |> List.map (fun x -> x.Id))
-            equal 99L streams.Head.LastPosition
+            let! (streams : Stream<_> list) = eventStore.GetStreams StreamsReadFilter.AllStreams
+            Expect.containsAll (streams |> List.map (fun x -> x.Id)) [prefix + "_1"; prefix + "_2"; prefix + "_3"] "" 
+            equal 99L (streams |> List.filter (fun x -> x.Id.StartsWith(prefix)) |> List.head |> (fun x -> x.LastVersion))
             isTrue (streams.Head.LastUpdatedUtc > DateTime.MinValue)
         }
         
         testTask "Get streams (startswith)" {
-            
-            let store = cfg.GetEmptyStore()
-            
-            let name = Guid.NewGuid().ToString("N")
+            let prefix = Guid.NewGuid().ToString("N")
             let addEventToStream i =
                 [1..99] 
-                |> List.map cfg.GetEvent 
-                |> store.AppendEvents (sprintf "X%i_%s" i name) ExpectedPosition.Any
+                |> List.map gen.GetEvent 
+                |> eventStore.AppendEvents (sprintf "%s_%i" prefix i) ExpectedVersion.Any
             
             for i in 1..3 do
                 do! addEventToStream i    
-            let! (streams : Stream list) = store.GetStreams (StreamsReadFilter.StartsWith("X2_"))
-            equal ["X2_"+name] (streams |> List.map (fun x -> x.Id))
+            let! (streams : Stream<_> list) = eventStore.GetStreams (StreamsReadFilter.StartsWith(prefix + "_2"))
+            equal [prefix+"_2"] (streams |> List.map (fun x -> x.Id))
             equal 1 streams.Length
         }
-    ] |> testSequenced
-
-let streamsTests (cfg:TestConfiguration) =
-    testList "Streams" [
         
         testTask "Get streams (endswith)" {
             let endsWith = Guid.NewGuid().ToString("N")
             let addEventToStream i =
-                cfg.GetEvent 1
-                |> cfg.Store.AppendEvent (sprintf "X%i_%s" i endsWith) ExpectedPosition.Any
+                gen.GetEvent 1
+                |> eventStore.AppendEvent (sprintf "X%i_%s" i endsWith) ExpectedVersion.Any
             
             for i in 1..3 do
                 do! addEventToStream i    
-            let! (streams : Stream list) = cfg.Store.GetStreams (StreamsReadFilter.EndsWith(endsWith))
+            let! (streams : Stream<_> list) = eventStore.GetStreams (StreamsReadFilter.EndsWith(endsWith))
             equal 3 streams.Length
         }
         
         testTask "Get streams (contains)" {
             let contains = Guid.NewGuid().ToString("N")
             let addEventToStream i =
-                cfg.GetEvent 1
-                |> cfg.Store.AppendEvent (sprintf "C_%s_%i" contains i) ExpectedPosition.Any
+                gen.GetEvent 1
+                |> eventStore.AppendEvent (sprintf "C_%s_%i" contains i) ExpectedVersion.Any
             
             for i in 1..3 do
                 do! addEventToStream i    
-            let! (streams : Stream list) = cfg.Store.GetStreams (StreamsReadFilter.Contains(contains))
+            let! (streams : Stream<_> list) = eventStore.GetStreams (StreamsReadFilter.Contains(contains))
             equal 3 streams.Length
             equal (sprintf "C_%s_1" contains) streams.Head.Id
         }
@@ -230,17 +224,16 @@ let streamsTests (cfg:TestConfiguration) =
         testTask "Get stream" {
             let streamId = (sprintf "OS_%s" (Guid.NewGuid().ToString("N")))
             do! [1..10]
-                |> List.map cfg.GetEvent
-                |> cfg.Store.AppendEvents streamId ExpectedPosition.Any
-            let! stream = cfg.Store.GetStream streamId
-            equal stream.LastPosition 10L
+                |> List.map gen.GetEvent
+                |> eventStore.AppendEvents streamId ExpectedVersion.Any
+            let! stream = eventStore.GetStream streamId
+            equal stream.LastVersion 10L
             equal stream.Id streamId
         }
     ]
 
-let allTests =
+let allTests generator eventStore =
     [
-        eventsTests
-        streamsTestsSequenced
-        streamsTests
+        eventsTests generator eventStore
+        streamsTests generator eventStore
     ]

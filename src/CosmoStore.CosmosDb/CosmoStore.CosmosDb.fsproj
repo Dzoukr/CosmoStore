@@ -5,10 +5,10 @@
     <Authors>Roman Provazník;Kunjan Dalal</Authors>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="StoredProcedures\AppendEvents.js" />
+    <EmbeddedResource Include="StoredProcedures\AppendEventsV2.js" />
+    <EmbeddedResource Include="StoredProcedures\AppendEventsV3.js" />
     <Compile Include="CosmosDb.fs" />
     <Compile Include="Serialization.fs" />
-    <Compile Include="Conversion.fs" />
     <Compile Include="EventStore.fs" />
   </ItemGroup>
   <ItemGroup>
