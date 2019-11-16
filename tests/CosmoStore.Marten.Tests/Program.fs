@@ -79,14 +79,12 @@ let private getCleanEventStore () =
     databases <- database :: databases
     getEventStore database.Conf
 
-let cfg() = Domain.defaultTestConfiguration getCleanEventStore
 
 [<EntryPoint>]
 let main _ =
     try 
         try 
-            (cfg(), "Marten")
-            |> AllTests.getTests
+            AllTests.getTests "Marten" Generator.defaultGenerator (getCleanEventStore())
             |> runTests testConfig
         with
             exn -> printfn "%A" exn |> fun _ -> 0
