@@ -2,6 +2,7 @@ namespace CosmoStore.Marten
 open Npgsql
 open Newtonsoft.Json
 open Newtonsoft.Json.FSharp.Idiomatic
+open Newtonsoft.Json.Linq
 
 module EventStore =
     open System
@@ -12,32 +13,32 @@ module EventStore =
     open System.Reactive.Linq
     open System.Reactive.Concurrency
 
-    type StreamData = {
-        Store: IDocumentStore
+    type StreamData<'payload, 'version> = {
+        StreamStore: IDocumentStore
         StreamId: string
-        ExpectedPosition: ExpectedPosition
-        EventWrites: EventWrite list
+        ExpectedVersion: ExpectedVersion<'version>
+        EventWrites: EventWrite<'payload> list
     }
-    type AgentResponse = | EventReads of EventRead list | Error of exn
+    type AgentResponse<'payload, 'version> = | EventReads of EventRead<'payload, 'version> list | Error of exn
 
-    type StreamMessage = Data of StreamData * AsyncReplyChannel<AgentResponse>
+    type StreamMessage<'payload, 'version> = Data of StreamData<'payload, 'version> * AsyncReplyChannel<AgentResponse<'payload, 'version>>
 
-    let agent =
+    let agent : MailboxProcessor<StreamMessage<JToken, int64>> =
             let processEvents message = task {
-                use session = message.Store.LightweightSession()
+                use session = message.StreamStore.LightweightSession()
                 let! lastPosition, metadataEntity = 
                     task {
-                        let! res = session |> Session.loadByStringTask<Stream> message.StreamId
+                        let! res = session |> Session.loadByStringTask<Stream<_>> message.StreamId
                         match res with
                         | Some r ->
-                            return r.LastPosition, Some r
+                            return r.LastVersion, Some r
                         | None -> 
                             return 0L, None
                     }
 
                 let nextPos = lastPosition + 1L
 
-                do Validation.validatePosition message.StreamId nextPos message.ExpectedPosition
+                do Validation.validateVersion message.StreamId nextPos message.ExpectedVersion
 
                 let ops =
                     message.EventWrites
@@ -46,16 +47,16 @@ module EventStore =
                 let _ =
                     match metadataEntity with
                     | Some s ->
-                        session.Store<Stream>({ s with LastPosition = (s.LastPosition + (int64 message.EventWrites.Length)); LastUpdatedUtc = DateTime.UtcNow })
+                        session.Store<Stream<_>>({ s with LastVersion = (s.LastVersion + (int64 message.EventWrites.Length)); LastUpdatedUtc = DateTime.UtcNow })
                     | None ->
-                        session.Store<Stream>({ Id = message.StreamId; LastPosition = (int64 message.EventWrites.Length); LastUpdatedUtc = DateTime.UtcNow })
+                        session.Store<Stream<_>>({ Id = message.StreamId; LastVersion = (int64 message.EventWrites.Length); LastUpdatedUtc = DateTime.UtcNow })
 
-                let _ = session.Store<EventRead>(ops |> List.toArray)
+                let _ = session.Store<EventRead<_,_>>(ops |> List.toArray)
                 do! session |> Session.saveChangesTask
                 return ops
             }
 
-            MailboxProcessor<StreamMessage>.Start(fun inbox ->
+            MailboxProcessor<StreamMessage<_,_>>.Start(fun inbox ->
 
             let rec loop() =
                 async {
@@ -72,12 +73,12 @@ module EventStore =
             loop()
         )
 
-    let private appendEvents (store) (streamId: string) (expectedPosition: ExpectedPosition) (events: EventWrite list) =
+    let private appendEvents (store) (streamId: string) (expectedVersion: ExpectedVersion<_>) (events: EventWrite<_> list) =
         task {
             let message = {
-                Store = store
+                StreamStore = store
                 StreamId = streamId
-                ExpectedPosition = expectedPosition
+                ExpectedVersion = expectedVersion
                 EventWrites = events
             }
             let getEventReads() = task {
@@ -89,21 +90,21 @@ module EventStore =
             }
             return! getEventReads()
         }
-    let private getEvents (store: IDocumentStore) (streamId: string) (eventsRead: EventsReadRange) = task {
+    let private getEvents (store: IDocumentStore) (streamId: string) (eventsRead: EventsReadRange<_>) = task {
         use session = store.LightweightSession()
         let! fetch =
             match eventsRead with
-            | AllEvents -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId @> 
-            | FromVersion f -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position >= f @>
-            | ToVersion t -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position > 0L && x.Position <= t @>
-            | PositionRange(f, t) -> session |> Session.query<EventRead> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Position >= f && x.Position <= t @>
-            |> Queryable.orderBy <@ fun x -> x.Position @>
+            | AllEvents -> session |> Session.query<EventRead<_,_>> |> Queryable.filter <@ fun x -> x.StreamId = streamId @> 
+            | FromVersion f -> session |> Session.query<EventRead<_,_>> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Version >= f @>
+            | ToVersion t -> session |> Session.query<EventRead<_,_>> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Version > 0L && x.Version <= t @>
+            | VersionRange(f, t) -> session |> Session.query<EventRead<_,_>> |> Queryable.filter <@ fun x -> x.StreamId = streamId && x.Version >= f && x.Version <= t @>
+            |> Queryable.orderBy <@ fun x -> x.Version @>
             |> Queryable.toListTask
         let res = fetch |> Seq.toList
         return res
     }
     let private getEvent store streamId position = task {
-        let filter = EventsReadRange.PositionRange(position, position + 1L)
+        let filter = EventsReadRange.VersionRange(position, position + 1L)
         let! events = getEvents store streamId filter
         return events.Head
     }
@@ -116,7 +117,7 @@ module EventStore =
         | _ -> ""
 
     // Get a type safe name in case this changes somehow
-    let private correlationIdPropName = propertyName <@ fun (x : EventRead) -> x.CorrelationId @>
+    let private correlationIdPropName = propertyName <@ fun (x : EventRead<_,_>) -> x.CorrelationId @>
 
     let private getEventsByCorrelationIdQuery = sprintf "where data->>'%s' = ?" correlationIdPropName
 
@@ -126,7 +127,7 @@ module EventStore =
             
             let! res = 
                 session
-                |> Session.sqlTask<EventRead> getEventsByCorrelationIdQuery [| box (corrId.ToString()) |]
+                |> Session.sqlTask<EventRead<_,_>> getEventsByCorrelationIdQuery [| box (corrId.ToString()) |]
 
             return res |> Seq.toList
         }
@@ -135,10 +136,10 @@ module EventStore =
         use session = store.LightweightSession()
         let! res =
             match streamsRead with
-            | AllStreams -> session |> Session.query<Stream> :> IQueryable<_>
-            | Contains c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.Contains(c) @> 
-            | EndsWith c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.EndsWith(c) @> 
-            | StartsWith c -> session |> Session.query<Stream> |> Queryable.filter <@ fun x -> x.Id.StartsWith(c) @> 
+            | AllStreams -> session |> Session.query<Stream<_>> :> IQueryable<_>
+            | Contains c -> session |> Session.query<Stream<_>> |> Queryable.filter <@ fun x -> x.Id.Contains(c) @> 
+            | EndsWith c -> session |> Session.query<Stream<_>> |> Queryable.filter <@ fun x -> x.Id.EndsWith(c) @> 
+            | StartsWith c -> session |> Session.query<Stream<_>> |> Queryable.filter <@ fun x -> x.Id.StartsWith(c) @> 
             |> Queryable.orderBy <@ fun x -> x.Id @>  
             |> Queryable.toListTask
             
@@ -147,7 +148,7 @@ module EventStore =
 
     let private getStream (store: IDocumentStore) streamId = task {
         use session = store.LightweightSession()
-        let! res = session |> Session.loadByStringTask<Stream> streamId
+        let! res = session |> Session.loadByStringTask<Stream<_>> streamId
         match res with
         | Some r -> return r
         | None -> return failwithf "SessionId %s is not present in database" streamId
@@ -181,7 +182,7 @@ module EventStore =
                     ds.Serializer(martenSerializer) |> ignore
             )
 
-        let eventAppended = Event<EventRead>()
+        let eventAppended = Event<EventRead<_,_>>()
 
         {
             AppendEvent = fun stream pos event -> task {
