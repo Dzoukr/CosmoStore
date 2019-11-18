@@ -23,6 +23,7 @@ F# Event Store library for various storage providers (Cosmos DB, Table Storage, 
 | Azure Cosmos DB | `Newtonsoft.Json` | CosmoStore.CosmosDb | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.CosmosDb.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.CosmosDb/) |@dzoukr |
 | Azure Table Storage | `Newtonsoft.Json` | CosmoStore.TableStorage  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.TableStorage.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.TableStorage/) | @dzoukr |
 | InMemory | `Newtonsoft.Json` | CosmoStore.InMemory  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.InMemory.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.InMemory/) | @kunjee
+| Marten | `Newtonsoft.Json` | CosmoStore.Marten  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.Marten.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.Marten/) | @kunjee
 
 ## What is new in version 3
 

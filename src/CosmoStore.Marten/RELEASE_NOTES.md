@@ -1,3 +1,6 @@
+### 3.0.0 - November 18 2019
+* Following v3 API (discussed in #27)
+
 ### 2.0.3 - March 27 2019
 * Make a usable version of getEventByCorrelationId #19
 
