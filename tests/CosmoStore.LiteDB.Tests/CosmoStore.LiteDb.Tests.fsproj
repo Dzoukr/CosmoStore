@@ -10,7 +10,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\CosmoStore.LiteDB\CosmoStore.LiteDB.fsproj" />
+    <ProjectReference Include="..\..\src\CosmoStore.LiteDb\CosmoStore.LiteDb.fsproj" />
     <ProjectReference Include="..\..\tests\CosmoStore.Tests\CosmoStore.Tests.fsproj" />
     <ProjectReference Include="..\..\src\CosmoStore\CosmoStore.fsproj" />
   </ItemGroup>

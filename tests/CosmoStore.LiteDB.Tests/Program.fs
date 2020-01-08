@@ -1,4 +1,4 @@
-﻿module CosmoStore.LiteDB.Tests.Program
+﻿module CosmoStore.LiteDb.Tests.Program
 
 open System
 open System.Collections.Generic

@@ -46,7 +46,7 @@ let tableStorage = createProject "CosmoStore.TableStorage" "Azure TableStorage" 
 let cosmosDb = createProject "CosmoStore.CosmosDb" "Azure Cosmos DB" "F# Event Store for Azure Cosmos DB"
 let martenStore = createProject "CosmoStore.Marten" "Marten Postgresql Store" "F# Event Store for Marten Postgresql DB"
 let inMemoryStore = createProject "CosmoStore.InMemory" "In Memory Store" "F# Event Store for In Memory Concurrent Dictionary"
-let liteDBStore = createProject "CosmoStore.LiteDB" "LiteDB Store" "F# Event Store for Lite DB"
+let liteDBStore = createProject "CosmoStore.LiteDb" "LiteDB Store" "F# Event Store for Lite DB"
 
 // building projects
 Target.create "BuildCosmoStore" (fun _ -> cosmoStore.Src |> build)
