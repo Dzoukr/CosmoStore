@@ -44,7 +44,6 @@ group InMemory
     storage: none
     nuget FSharp.Core = 4.3.1
     nuget TaskBuilder.fs
-    nuget Newtonsoft.Json !~> 11 lowest_matching: true
 
 group Tests
     source https://api.nuget.org/v3/index.json
