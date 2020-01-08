@@ -110,7 +110,7 @@ Target.create "NugetTableStorage" (fun _ -> tableStorage |> createNuget)
 Target.create "NugetCosmosDb" (fun _ -> cosmosDb |> createNuget)
 Target.create "NugetMartenStore" (fun _ -> martenStore |> createNuget)
 Target.create "NugetInMemoryStore" (fun _ -> inMemoryStore |> createNuget)
-Target.create "NugetLiteDBStore" (fun _ -> inMemoryStore |> createNuget)
+Target.create "NugetLiteDBStore" (fun _ -> liteDBStore |> createNuget)
 Target.create "NugetAll" (fun _ -> 
     [
         "NugetCosmoStore"
