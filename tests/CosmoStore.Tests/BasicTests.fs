@@ -30,6 +30,7 @@ let eventsTests (gen:TestDataGenerator<_>) eventStore =
         //     |> ignore
         // }
 
+        //TODO: Commented test. If not require remove it.
         // testTask "Store same event twice" {
         //     let streamId = cfg.GetStreamId()
         //     let event = cfg.GetEvent 0
@@ -50,7 +51,7 @@ let eventsTests (gen:TestDataGenerator<_>) eventStore =
             areAscending events
             areNewer events
         }
-        
+
         testTask "Gets event" {
             let streamId = gen.GetStreamId()
             do! [1..10] |> List.map gen.GetEvent |> eventStore.AppendEvents streamId Any
@@ -165,7 +166,7 @@ let eventsTests (gen:TestDataGenerator<_>) eventStore =
 
 let streamsTests (gen:TestDataGenerator<_>) eventStore =
     testList "Streams" [
-        
+
         testTask "Get streams (all)" {
             let prefix = Guid.NewGuid().ToString("N")
             let addEventToStream i =

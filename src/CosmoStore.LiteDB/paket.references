@@ -1,0 +1,5 @@
+group LiteDB
+    FSharp.Core
+    TaskBuilder.fs
+    LiteDB
+    LiteDB.FSharp

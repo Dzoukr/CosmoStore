@@ -1,6 +1,5 @@
 ﻿
 open CosmoStore.Marten
-open CosmoStore.Marten
 open CosmoStore.Tests
 open Expecto
 open Expecto.Logging
@@ -56,7 +55,7 @@ let getEnvOrDefault defaultVal str =
 
 let host() = "POSTGRES_HOST" |> getEnvOrDefault "localhost"
 let user() = "POSTGRES_USER" |> getEnvOrDefault "postgres"
-let pass() = "POSTGRES_PASS" |> getEnvOrDefault "postgres"
+let pass() = "POSTGRES_PASS" |> getEnvOrDefault ""
 let db() = "POSTGRES_DB" |> getEnvOrDefault "postgres"
 
 let getNewDatabase(conf) =
