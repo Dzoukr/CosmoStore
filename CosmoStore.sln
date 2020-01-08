@@ -29,6 +29,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.CosmosDb.Tests.V
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.TableStorage.Tests.V2", "tests\CosmoStore.TableStorage.Tests.V2\CosmoStore.TableStorage.Tests.V2.fsproj", "{049F25E8-E168-4392-B5BC-D728503AA669}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.LiteDB.Tests", "tests\CosmoStore.LiteDB.Tests\CosmoStore.LiteDB.Tests.fsproj", "{0841D679-0AA0-470D-A216-C3DC69148061}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,12 @@ Global
 		{049F25E8-E168-4392-B5BC-D728503AA669}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{049F25E8-E168-4392-B5BC-D728503AA669}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{049F25E8-E168-4392-B5BC-D728503AA669}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0841D679-0AA0-470D-A216-C3DC69148061}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0841D679-0AA0-470D-A216-C3DC69148061}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0841D679-0AA0-470D-A216-C3DC69148061}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0841D679-0AA0-470D-A216-C3DC69148061}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C164366-1844-47EB-866F-E2ADF964805A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C164366-1844-47EB-866F-E2ADF964805A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -93,5 +101,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{0C164366-1844-47EB-866F-E2ADF964805A} = {0A912F78-ABAE-4E44-8676-56764426BDFA}
 		{058D6307-B865-49E9-BF08-A721B1CE3AA7} = {B0586636-E0F7-438F-B11A-315940D4A108}
+		{0841D679-0AA0-470D-A216-C3DC69148061} = {B71448E5-BC9A-441C-A10B-07DE4C18232D}
 	EndGlobalSection
 EndGlobal
