@@ -4,12 +4,15 @@
 <img src="https://github.com/Dzoukr/CosmoStore/raw/master/logo.png" width="150px"/>
 </p>
 
-F# Event Store library for various storage providers (Cosmos DB, Table Storage, Marten, InMemory)
+F# Event Store library for various storage providers (Cosmos DB, Table Storage, Marten, InMemory and LiteDB)
 
 ## Features
 - Storage agnostic F# API
 - Support for Azure Cosmos DB
 - Support for Azure Table Storage
+- Support for Marten
+- Support for In-memory
+- Support for LiteDB
 - Optimistic concurrency
 - ACID compliant
 - Simple Stream querying
