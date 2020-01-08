@@ -97,7 +97,7 @@ let createNuget (project:Project) =
             "PackageIconUrl=\"\""
             "PackageIconUrl=\"https://raw.githubusercontent.com/Dzoukr/CosmoStore/master/logo.png\""
             sprintf "PackageTags=\"%s\"" project.Tags
-            "Copyright=\"Roman Provazník - 2019\""
+            "Copyright=\"Roman Provazník - 2020\""
         ] 
         |> List.map (fun x -> "/p:" + x)
         |> String.concat " "
