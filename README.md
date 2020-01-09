@@ -4,12 +4,15 @@
 <img src="https://github.com/Dzoukr/CosmoStore/raw/master/logo.png" width="150px"/>
 </p>
 
-F# Event Store library for various storage providers (Cosmos DB, Table Storage, Marten, InMemory)
+F# Event Store library for various storage providers (Cosmos DB, Table Storage, Marten, InMemory and LiteDB)
 
 ## Features
 - Storage agnostic F# API
 - Support for Azure Cosmos DB
 - Support for Azure Table Storage
+- Support for Marten
+- Support for In-memory
+- Support for LiteDB
 - Optimistic concurrency
 - ACID compliant
 - Simple Stream querying
@@ -24,6 +27,7 @@ F# Event Store library for various storage providers (Cosmos DB, Table Storage, 
 | Azure Table Storage | `Newtonsoft.Json` | CosmoStore.TableStorage  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.TableStorage.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.TableStorage/) | @dzoukr |
 | InMemory | `Newtonsoft.Json` | CosmoStore.InMemory  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.InMemory.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.InMemory/) | @kunjee
 | Marten | `Newtonsoft.Json` | CosmoStore.Marten  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.Marten.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.Marten/) | @kunjee
+| LiteDB | `BsonValue` / `BsonDocument` | CosmoStore.LiteDb  | [![NuGet](https://img.shields.io/nuget/v/CosmoStore.LiteDb.svg?style=flat)](https://www.nuget.org/packages/CosmoStore.LiteDb/) | @kunjee
 
 ## What is new in version 3
 

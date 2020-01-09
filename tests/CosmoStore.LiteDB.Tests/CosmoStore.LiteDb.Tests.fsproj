@@ -1,8 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
 
@@ -10,8 +10,9 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\CosmoStore.TableStorage\CosmoStore.TableStorage.fsproj" />
+    <ProjectReference Include="..\..\src\CosmoStore.LiteDb\CosmoStore.LiteDb.fsproj" />
     <ProjectReference Include="..\..\tests\CosmoStore.Tests\CosmoStore.Tests.fsproj" />
+    <ProjectReference Include="..\..\src\CosmoStore\CosmoStore.fsproj" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
