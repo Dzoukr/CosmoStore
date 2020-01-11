@@ -7,6 +7,7 @@ open System
 open System.Reactive.Linq
 open System.Reactive.Concurrency
 open LiteDB
+open LiteDB.FSharp.Extensions
 
 [<Literal>]
 let private eventCollection = "events"
@@ -46,22 +47,18 @@ let processEvents message =
                 evn |> Conversion.eventWriteToEventRead message.StreamId (nextPos + (int64 i)) DateTime.UtcNow)
 
 
-        match metadataEntity with
-        | Some s ->
-            let b =
-                streams.Update
-                    ({ s with
-                           LastVersion = (s.LastVersion + (int64 message.EventWrites.Length))
-                           LastUpdatedUtc = DateTime.UtcNow })
-            if b then ()
-            else failwithf "Stream update failed with stream id %s" s.Id
-        | None ->
-            streams.Insert
-                ({ Id = message.StreamId
-                   LastVersion = (int64 message.EventWrites.Length)
-                   LastUpdatedUtc = DateTime.UtcNow })
-            |> ignore //TODO: make use of ID if required
+        let updatedStream =
+            match metadataEntity with
+            | Some s ->
+                { s with
+                      LastVersion = (s.LastVersion + (int64 message.EventWrites.Length))
+                      LastUpdatedUtc = DateTime.UtcNow }
+            | None ->
+                { Id = message.StreamId
+                  LastVersion = (int64 message.EventWrites.Length)
+                  LastUpdatedUtc = DateTime.UtcNow }
 
+        streams.Upsert(BsonValue updatedStream.Id, updatedStream) |> ignore
         let events = eventsDb message.DB
         let _ = events.InsertBulk ops
         return ops
@@ -73,8 +70,6 @@ let processEvents message =
 
 let private appendEvents (db: LiteDatabase) (streamId: string) (expectedVersion: ExpectedVersion<_>)
     (events: EventWrite<_> list) =
-    //Litedb is single file database so multi thread access kind of get crazy. That is the reason putting everything in single queue to process
-
     task {
         let message =
             { DB = db
@@ -93,15 +88,16 @@ let private getEvents (db: LiteDatabase) (streamId: string) (eventsRead: EventsR
 
         let fetch =
             match eventsRead with
-            | AllEvents -> events.Find(fun x -> x.StreamId = streamId)
+            | AllEvents -> events.findMany <@ fun x -> x.StreamId = streamId @>
             | FromVersion f ->
-                events.Find(fun x -> x.StreamId = streamId && x.Version >= f) //Query.GTE("Position", BsonValue(f))
+                events.findMany
+                    <@ fun x -> x.StreamId = streamId && x.Version >= f @> //Query.GTE("Position", BsonValue(f))
             | ToVersion t ->
-                events.Find
-                    (fun x -> x.StreamId = streamId && x.Version > 0L && x.Version <= t) //Query.Between("Position",BsonValue(0L), BsonValue(t))
+                events.findMany
+                    <@ fun x -> x.StreamId = streamId && x.Version > 0L && x.Version <= t @> //Query.Between("Position",BsonValue(0L), BsonValue(t))
             | VersionRange(f, t) ->
-                events.Find
-                    (fun x -> x.StreamId = streamId && x.Version >= f && x.Version <= t) //Query.Between("Position",BsonValue(f), BsonValue(t))
+                events.findMany
+                    <@ fun x -> x.StreamId = streamId && x.Version >= f && x.Version <= t @> //Query.Between("Position",BsonValue(f), BsonValue(t))
 
 
         let res =
@@ -124,11 +120,9 @@ let private getEvent (db) streamId version =
 let private getEventsByCorrelationId (db: LiteDatabase) (corrId: Guid) =
     task {
         let events = eventsDb db
-        //TODO: Some is not getting compared for litedb query.
+
         let res =
-            events.FindAll()
-            |> Seq.filter (fun x -> x.CorrelationId = Some corrId)
-            |> Seq.toList //events.Find(fun x -> x.CorrelationId = Some corrId) |> Seq.sortBy(fun x -> x.CreatedUtc) |> Seq.toList
+            events.findMany <@ fun x -> x.CorrelationId = Some corrId @> |> Seq.toList
         return res
     }
 
