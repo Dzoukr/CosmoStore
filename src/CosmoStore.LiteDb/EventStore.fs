@@ -122,9 +122,7 @@ let private getEventsByCorrelationId (db: LiteDatabase) (corrId: Guid) =
         let events = eventsDb db
 
         let res =
-            events.findMany <@ fun x -> x.CorrelationId = Some corrId @>
-            |> Seq.filter (fun x -> x.CorrelationId = Some corrId)
-            |> Seq.toList //events.Find(fun x -> x.CorrelationId = Some corrId) |> Seq.sortBy(fun x -> x.CreatedUtc) |> Seq.toList
+            events.findMany <@ fun x -> x.CorrelationId = Some corrId @> |> Seq.toList
         return res
     }
 
