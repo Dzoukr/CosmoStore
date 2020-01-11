@@ -3,7 +3,6 @@ namespace CosmoStore.Marten
 open Npgsql
 open Newtonsoft.Json
 open Newtonsoft.Json.FSharp.Idiomatic
-open Newtonsoft.Json.Linq
 
 module EventStore =
     open System

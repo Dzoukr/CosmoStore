@@ -53,6 +53,13 @@ group LiteDB
     nuget LiteDB
     nuget LiteDB.FSharp
 
+group ServiceStack
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget TaskBuilder.fs
+    nuget FSharp.Core
+    nuget ServiceStack.OrmLite
+
 group Tests
     source https://api.nuget.org/v3/index.json
     storage: none
