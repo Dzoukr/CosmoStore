@@ -1,7 +1,9 @@
 ﻿namespace CosmoStore.ServiceStack
 
 open ServiceStack.Data
+open ServiceStack.Text
 
 type Configuration = {
-    Factory: DbConnectionFactory
+    Factory: IDbConnectionFactory
+    Serializer: IStringSerializer
 }

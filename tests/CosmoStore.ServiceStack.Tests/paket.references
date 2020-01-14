@@ -1,0 +1,6 @@
+group ServiceStackTest
+    TaskBuilder.fs
+    FSharp.Core
+    ServiceStack.OrmLite
+    ServiceStack.OrmLite.Sqlite.Core
+    

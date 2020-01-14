@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Compile Include="ServiceStackConf.fs" />
+    <Compile Include="Mapper.fs" />
     <Compile Include="EventStore.fs" />
     <Content Include="paket.references" />
     <Content Include="RELEASE_NOTES.md" />

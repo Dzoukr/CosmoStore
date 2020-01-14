@@ -1,80 +1,31 @@
 namespace CosmoStore.ServiceStack
 
 open System
+open ServiceStack.Text
 open CosmoStore
 open ServiceStack.Data
 open ServiceStack.OrmLite
-open FSharp.Control.Tasks.V2.ContextInsensitive
-open ServiceStack.DataAnnotations
-
-[<CLIMutable>]
-[<Alias("ss_events")>]
-type EventReadDB<'payload, 'version when 'payload: (new: unit -> 'payload) and 'payload: struct and 'payload :> ValueType> =
-    { Id: Guid
-      CorrelationId: Nullable<Guid>
-      CausationId: Nullable<Guid>
-      StreamId: StreamId
-      Version: 'version
-      Name: string
-      Data: 'payload
-      Metadata: Nullable<'payload>
-      CreatedUtc: DateTime }
-
-    member x.To: EventRead<'payload, 'version> =
-        { Id = x.Id
-          CorrelationId = Option.ofNullable x.CorrelationId
-          CausationId = Option.ofNullable x.CausationId
-          StreamId = x.StreamId
-          Version = x.Version
-          Name = x.Name
-          Data = x.Data
-          Metadata = Option.ofNullable x.Metadata
-          CreatedUtc = x.CreatedUtc }
-
-    static member From(x: EventRead<'payload, 'version>): EventReadDB<'payload, 'version> =
-        { Id = x.Id
-          CorrelationId = Option.toNullable x.CorrelationId
-          CausationId = Option.toNullable x.CausationId
-          StreamId = x.StreamId
-          Version = x.Version
-          Name = x.Name
-          Data = x.Data
-          Metadata = Option.toNullable x.Metadata
-          CreatedUtc = x.CreatedUtc }
-
-[<CLIMutable>]
-[<Alias("ss_streams")>]
-type StreamDB =
-    { Id: StreamId
-      LastVersion: int64
-      LastUpdatedUtc: DateTime }
-
-    member x.To: Stream<int64> =
-        { Id = x.Id
-          LastVersion = x.LastVersion
-          LastUpdatedUtc = x.LastUpdatedUtc }
-
-    static member From(x: Stream<int64>): StreamDB =
-        { Id = x.Id
-          LastVersion = x.LastVersion
-          LastUpdatedUtc = x.LastUpdatedUtc }
-
+open FSharp.Control.Tasks.V2
+open System.Reactive.Linq
+open System.Reactive.Concurrency
+    
 module EventStore =
 
     type StreamData<'payload, 'version> =
-        { StreamStore: DbConnectionFactory
+        { StreamStore: IDbConnectionFactory
           StreamId: string
           ExpectedVersion: ExpectedVersion<'version>
           EventWrites: EventWrite<'payload> list }
 
     let checkNull a = obj.ReferenceEquals(a, null)
 
-    let processEvents (message: StreamData<_, _>) =
+    let processEvents (message: StreamData<_, _>) (serializer: IStringSerializer) =
         task {
             use! conn = message.StreamStore.OpenAsync()
+            use trans = conn.OpenTransaction()
             conn.CreateTableIfNotExists
                 ([| typeof<StreamDB>
-                    typeof<EventReadDB<_, _>> |])
+                    typeof<EventReadDB> |])
             let! lastVersion, metadataEntity = task {
                                                    let! findStream = conn.SingleByIdAsync<StreamDB>(message.StreamId)
                                                    if (checkNull findStream) then return 0L, None
@@ -99,11 +50,12 @@ module EventStore =
                       LastUpdatedUtc = DateTime.UtcNow }
 
             conn.Save<StreamDB>(updatedStream) |> ignore
-            conn.SaveAll<EventReadDB<_, _>>(ops |> List.map EventReadDB.From) |> ignore
+            conn.SaveAll<EventReadDB>(ops |> List.map (EventReadDB.From serializer)) |> ignore
+            trans.Commit()
             return ops
         }
 
-    let private appendEvents (db: DbConnectionFactory) (streamId: string) (expectedVersion: ExpectedVersion<_>)
+    let private appendEvents (db: IDbConnectionFactory) (serializer: IStringSerializer) (streamId: string) (expectedVersion: ExpectedVersion<_>)
         (events: EventWrite<_> list) =
         task {
             let message =
@@ -112,49 +64,100 @@ module EventStore =
                   ExpectedVersion = expectedVersion
                   EventWrites = events }
 
-            return! processEvents message
+            return! processEvents message serializer
         }
 
-    let private getEvents (db: DbConnectionFactory) (streamId: string) (eventsRead: EventsReadRange<_>) =
+    let private getEvents (db: IDbConnectionFactory) (serializer: IStringSerializer) (streamId: string) (eventsRead: EventsReadRange<_>) =
         task {
             use! conn = db.OpenAsync()
 
-            let q =
-                match eventsRead with
-                | AllEvents -> conn.From<EventReadDB<_, _>>().Where(fun (x: EventReadDB<_, _>) -> x.StreamId = streamId)
-                | FromVersion f ->
-                    conn.From<EventReadDB<_, _>>()
-                        .Where(fun (x: EventReadDB<_, _>) -> x.StreamId = streamId && x.Version >= f)
-                | ToVersion t ->
-                    conn.From<EventReadDB<_, _>>()
-                        .Where(fun (x: EventReadDB<_, _>) -> x.StreamId = streamId && x.Version > 0L && x.Version <= t)
-                | VersionRange(f, t) ->
-                    conn.From<EventReadDB<_, _>>()
-                        .Where(fun (x: EventReadDB<_, _>) -> x.StreamId = streamId && x.Version >= f && x.Version <= t)
-            let! fetch = conn.SelectAsync<EventReadDB<_, _>>(q)
+            let! fetch = match eventsRead with
+                         | AllEvents ->
+                             conn.SelectAsync<EventReadDB>(fun (x: EventReadDB) -> x.StreamId = streamId)
+                         | FromVersion f ->
+                             conn.SelectAsync<EventReadDB>(fun (x: EventReadDB) ->
+                                 x.StreamId = streamId && x.Version >= f)
+                         | ToVersion t ->
+                             conn.SelectAsync<EventReadDB>(fun (x: EventReadDB) ->
+                                 x.StreamId = streamId && x.Version > 0L && x.Version <= t)
+                         | VersionRange(f, t) ->
+                             conn.SelectAsync<EventReadDB>(fun (x: EventReadDB) ->
+                                 x.StreamId = streamId && x.Version >= f && x.Version <= t)
 
             let res =
                 fetch
-                |> Seq.map(fun x -> x.To)
+                |> Seq.map (fun x -> x.To serializer)
                 |> Seq.sortBy (fun x -> x.Version)
                 |> Seq.toList
             return res
         }
-        
-    let private getEvent (db) streamId version = 
-        task {
-        let filter = EventsReadRange.VersionRange(version, version + 1L)
-        let! events = getEvents db streamId filter
-        return events.Head
-    }
-        
-    let private getEventsByCorrelationId (db: DbConnectionFactory) (corrId: Guid) =
-    task {
-        use! conn = db.OpenAsync()
 
-        let res =
-            events.findMany <@ fun x -> x.CorrelationId = Some corrId @>
-            |> Seq.filter (fun x -> x.CorrelationId = Some corrId)
-            |> Seq.toList //events.Find(fun x -> x.CorrelationId = Some corrId) |> Seq.sortBy(fun x -> x.CreatedUtc) |> Seq.toList
-        return res
-    }
+    let private getEvent (db) (serializer: IStringSerializer) streamId version =
+        task {
+            let filter = EventsReadRange.VersionRange(version, version + 1L)
+            let! events = getEvents db serializer streamId filter
+            return events.Head
+        }
+
+    let private getEventsByCorrelationId (db: IDbConnectionFactory) (serializer: IStringSerializer) (corrId: Guid) =
+        task {
+            use! conn = db.OpenAsync()
+
+            let res =
+                conn.Select<EventReadDB>(fun (x: EventReadDB) -> x.CorrelationId = Nullable(corrId))
+                |> Seq.map (fun x -> x.To serializer)
+                |> Seq.toList
+            return res
+        }
+
+    let private getStreams (db: IDbConnectionFactory) (streamsRead: StreamsReadFilter) =
+        task {
+            use! conn = db.OpenAsync()
+
+            let! sQ = match streamsRead with
+                      | AllStreams -> conn.SelectAsync<StreamDB>()
+                      | Contains c -> conn.SelectAsync<StreamDB>(fun (x: StreamDB) -> x.Id.Contains(c))
+                      | EndsWith c -> conn.SelectAsync<StreamDB>(fun (x: StreamDB) -> x.Id.EndsWith(c))
+                      | StartsWith c -> conn.SelectAsync<StreamDB>(fun (x: StreamDB) -> x.Id.StartsWith(c))
+            return sQ
+                   |> Seq.map (fun x -> x.To)
+                   |> Seq.sortBy (fun x -> x.Id)
+                   |> Seq.toList
+        }
+
+    let private getStream (db: IDbConnectionFactory) (streamId: string) =
+        task {
+            use! conn = db.OpenAsync()
+            let! res = conn.SingleByIdAsync<StreamDB>(streamId)
+            return res.To }
+
+    let getEventStore (configuration: Configuration) =
+        let db = configuration.Factory
+        let ser = configuration.Serializer
+
+        let eventAppended = Event<EventRead<_, _>>()
+
+
+        { AppendEvent =
+              fun stream pos event ->
+                  task {
+                      let! events = appendEvents db ser stream pos [ event ]
+                      events |> List.iter eventAppended.Trigger
+                      return events |> List.head
+                  }
+          AppendEvents =
+              fun stream pos events ->
+                  task {
+                      if events |> List.isEmpty then
+                          return []
+                      else
+                          let! events = appendEvents db ser stream pos events
+                          events |> List.iter eventAppended.Trigger
+                          return events
+                  }
+          GetEvent = getEvent db ser
+          GetEvents = getEvents db ser
+          GetEventsByCorrelationId = getEventsByCorrelationId db ser
+          GetStreams = getStreams db
+          GetStream = getStream db
+          EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance) }

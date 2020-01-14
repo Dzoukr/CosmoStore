@@ -60,6 +60,14 @@ group ServiceStack
     nuget FSharp.Core
     nuget ServiceStack.OrmLite
 
+group ServiceStackTest
+    source https://api.nuget.org/v3/index.json
+    storage: none
+    nuget TaskBuilder.fs
+    nuget FSharp.Core
+    nuget ServiceStack.OrmLite
+    nuget ServiceStack.OrmLite.Sqlite.Core
+
 group Tests
     source https://api.nuget.org/v3/index.json
     storage: none
