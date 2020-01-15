@@ -31,6 +31,10 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.LiteDb.Tests", "
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.LiteDb", "src\CosmoStore.LiteDb\CosmoStore.LiteDb.fsproj", "{FF45293C-AC51-486D-838B-FCAA92CC3945}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.ServiceStack", "src\CosmoStore.ServiceStack\CosmoStore.ServiceStack.fsproj", "{0D420A66-D745-478D-8E85-2D769180F90D}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "CosmoStore.ServiceStack.Tests", "tests\CosmoStore.ServiceStack.Tests\CosmoStore.ServiceStack.Tests.fsproj", "{1A10A7DE-F206-4FFA-A837-81EA4476416A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -93,6 +97,14 @@ Global
 		{FF45293C-AC51-486D-838B-FCAA92CC3945}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF45293C-AC51-486D-838B-FCAA92CC3945}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF45293C-AC51-486D-838B-FCAA92CC3945}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D420A66-D745-478D-8E85-2D769180F90D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D420A66-D745-478D-8E85-2D769180F90D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D420A66-D745-478D-8E85-2D769180F90D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D420A66-D745-478D-8E85-2D769180F90D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A10A7DE-F206-4FFA-A837-81EA4476416A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A10A7DE-F206-4FFA-A837-81EA4476416A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A10A7DE-F206-4FFA-A837-81EA4476416A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A10A7DE-F206-4FFA-A837-81EA4476416A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -102,5 +114,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{058D6307-B865-49E9-BF08-A721B1CE3AA7} = {B0586636-E0F7-438F-B11A-315940D4A108}
+		{0D420A66-D745-478D-8E85-2D769180F90D} = {8D2D896F-F43D-4B17-9176-631BBE6D69A7}
+		{1A10A7DE-F206-4FFA-A837-81EA4476416A} = {42726C1A-1D90-4AB7-8E1F-C5BC8A102D3F}
 	EndGlobalSection
 EndGlobal

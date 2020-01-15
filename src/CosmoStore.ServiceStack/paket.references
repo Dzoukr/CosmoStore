@@ -1,0 +1,4 @@
+group ServiceStack
+    FSharp.Core
+    TaskBuilder.fs
+    ServiceStack.OrmLite
