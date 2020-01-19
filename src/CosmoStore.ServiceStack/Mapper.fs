@@ -31,7 +31,9 @@ type EventReadDB =
       StreamId: StreamId
       Version: int64
       Name: string
+      [<StringLength(StringLengthAttribute.MaxText)>]
       Data: string
+      [<StringLength(StringLengthAttribute.MaxText)>]
       Metadata: string
       CreatedUtc: DateTime }
 
