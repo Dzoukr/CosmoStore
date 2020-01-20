@@ -1,4 +1,4 @@
-### 3.0.1 January 19 2020
+### 3.0.1 January 20 2020
 * Data property string length is set to max
 
 ### 3.0.0 - January 12 2020
