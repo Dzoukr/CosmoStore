@@ -2,14 +2,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>CosmoStore.InMemory</PackageId>
+    <Description>F# Event Store for In Memory Concurrent Dictionary</Description>
+    <RepositoryUrl>https://github.com/Dzoukr/CosmoStore</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/Dzoukr/CosmoStore/blob/master/LICENSE.md</PackageLicenseUrl>
+    <PackageIconUrl>https://github.com/Dzoukr/CosmoStore/raw/master/logo.png</PackageIconUrl>
+    <PackageTags>In Memory Store</PackageTags>
     <Authors>Roman Provazník;Kunjan Dalal</Authors>
+    <Version>3.1.1</Version>
+    <PackageReleaseNotes>Fixing package dependencies #40</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CosmoStore\CosmoStore.fsproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="paket.references" />
-    <Content Include="RELEASE_NOTES.md" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="InMemoryConf.fs" />

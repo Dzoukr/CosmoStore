@@ -1,3 +1,6 @@
+### 3.0.2 - January 27 2020
+* Fixing package dependencies #40
+
 ### 3.0.1 January 20 2020
 * Data property string length is set to max
 

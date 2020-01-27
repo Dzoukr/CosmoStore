@@ -2,14 +2,22 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>CosmoStore.ServiceStack</PackageId>
+    <Description>F# Event Store for All DB supported by ServiceStack</Description>
+    <RepositoryUrl>https://github.com/Dzoukr/CosmoStore</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/Dzoukr/CosmoStore/blob/master/LICENSE.md</PackageLicenseUrl>
+    <PackageIconUrl>https://github.com/Dzoukr/CosmoStore/raw/master/logo.png</PackageIconUrl>
+    <PackageTags>ServiceStack Store</PackageTags>
+    <Authors>Roman Provazník;Kunjan Dalal</Authors>
+    <Version>3.0.2</Version>
+    <PackageReleaseNotes>Fixing package dependencies #40</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="ServiceStackConf.fs" />
     <Compile Include="Mapper.fs" />
     <Compile Include="EventStore.fs" />
-    <Content Include="paket.references" />
-    <Content Include="RELEASE_NOTES.md" />
   </ItemGroup>
 
   <ItemGroup>

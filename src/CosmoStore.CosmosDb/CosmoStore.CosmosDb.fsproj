@@ -2,7 +2,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Authors>Roman Provazník;Kunjan Dalal</Authors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>CosmoStore.CosmosDb</PackageId>
+    <Description>F# Event Store for Azure Cosmos DB</Description>
+    <RepositoryUrl>https://github.com/Dzoukr/CosmoStore</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/Dzoukr/CosmoStore/blob/master/LICENSE.md</PackageLicenseUrl>
+    <PackageIconUrl>https://github.com/Dzoukr/CosmoStore/raw/master/logo.png</PackageIconUrl>
+    <PackageTags>Event Store</PackageTags>
+    <Authors>Roman Provazník</Authors>
+    <Version>3.0.0</Version>
+    <PackageReleaseNotes>Following v3 API (discussed in #27)</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="StoredProcedures\AppendEventsV2.js" />

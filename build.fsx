@@ -1,148 +1,106 @@
 ﻿#r "paket: groupref Build //"
-
 #load ".fake/build.fsx/intellisense.fsx"
-open Fake
-open Fake.Core
+
+open System.IO
 open Fake.IO
-open Fake.IO.Globbing.Operators
-open Fake.Core.TargetOperators
+open Fake.Core
 open Fake.DotNet
 open Fake.IO.FileSystemOperators
+open Fake.Core.TargetOperators
 
-module Target =
-    let runParallel n t = Target.run n t []   
+module Tools =
+    let private findTool tool winTool =
+        let tool = if Environment.isUnix then tool else winTool
+        match ProcessUtils.tryFindFileOnPath tool with
+        | Some t -> t
+        | _ ->
+            let errorMsg =
+                tool + " was not found in path. " +
+                "Please install it and make sure it's available from your path. "
+            failwith errorMsg
+            
+    let private runTool (cmd:string) args workingDir =
+        let arguments = args |> String.split ' ' |> Arguments.OfArgs
+        Command.RawCommand (cmd, arguments)
+        |> CreateProcess.fromCommand
+        |> CreateProcess.withWorkingDirectory workingDir
+        |> CreateProcess.ensureExitCode
+        |> Proc.run
+        |> ignore
+        
+    let dotnet cmd workingDir =
+        let result =
+            DotNet.exec (DotNet.Options.withWorkingDirectory workingDir) cmd ""
+        if result.ExitCode <> 0 then failwithf "'dotnet %s' failed in %s" cmd workingDir
+    
 
-let assertProcessResult (p : ProcessResult) =
-    if not p.OK then
-        p.Errors
-        |> Seq.iter(Trace.traceError)
-        failwithf "Failed with exitcode: %d" p.ExitCode
-let run par = par |> DotNet.exec id "run" |> assertProcessResult
-let build par = par |> DotNet.build id |> ignore
+// Targets
+let clean proj = [ proj </> "bin"; proj </> "obj" ] |> Shell.cleanDirs
 
-type Project = {
-    Src : string
-    Tests : string
-    ReleaseNotes : ReleaseNotes.ReleaseNotes
-    Tags : string
-    Package : string
-    Description : string
-}
+let createNuget proj =
+    clean proj
+    Tools.dotnet "restore --no-cache" proj
+    Tools.dotnet "pack -c Release" proj
 
-let createProject projectName tags desc = 
-    let src = "./src" |> Fake.IO.Path.getFullName
-    let tests = "./tests" |> Fake.IO.Path.getFullName
-    {
-        Src = src </> projectName
-        Tests = tests </> projectName
-        ReleaseNotes = src </> projectName </> "RELEASE_NOTES.md" |> ReleaseNotes.load
-        Tags = "F# FSharp EventStore EventSourcing " + tags
-        Package = projectName
-        Description = desc
-    }
+let publishNuget proj =
+    createNuget proj
+    let nugetKey =
+        match Environment.environVarOrNone "NUGET_KEY" with
+        | Some nugetKey -> nugetKey
+        | None -> failwith "The Nuget API key must be set in a NUGET_KEY environmental variable"
+    let nupkg =
+        Directory.GetFiles(proj </> "bin" </> "Release")
+        |> Seq.head
+        |> Path.GetFullPath
+    Tools.dotnet (sprintf "nuget push %s -s nuget.org -k %s" nupkg nugetKey) proj
+    
+Target.create "PackCosmoStore" (fun _ -> "src" </> "CosmoStore" |> createNuget)
+Target.create "PublishCosmoStore" (fun _ -> "src" </> "CosmoStore" |> publishNuget)
+Target.create "TestCosmoStore" (fun _ -> Tools.dotnet "run" ("tests" </> "CosmoStore.Tests"))
 
-let cosmoStore = createProject "CosmoStore" "" "F# Event Store API definition (for storage provider specific implementations check CosmoStore.* packages)"
-let tableStorage = createProject "CosmoStore.TableStorage" "Azure TableStorage" "F# Event Store for Azure Table Storage"
-let cosmosDb = createProject "CosmoStore.CosmosDb" "Azure Cosmos DB" "F# Event Store for Azure Cosmos DB"
-let martenStore = createProject "CosmoStore.Marten" "Marten Postgresql Store" "F# Event Store for Marten Postgresql DB"
-let inMemoryStore = createProject "CosmoStore.InMemory" "In Memory Store" "F# Event Store for In Memory Concurrent Dictionary"
-let liteDBStore = createProject "CosmoStore.LiteDb" "LiteDB Store" "F# Event Store for Lite DB"
-let serviceStackStore = createProject "CosmoStore.ServiceStack" "ServiceStack Store" "F# Event Store for All DB"
+"TestCosmoStore" ==> "PackCosmoStore"
+"TestCosmoStore" ==> "PublishCosmoStore"
 
-// building projects
-Target.create "BuildCosmoStore" (fun _ -> cosmoStore.Src |> build)
-Target.create "BuildTableStorage" (fun _ -> tableStorage.Src |> build)
-Target.create "BuildCosmosDb" (fun _ -> cosmosDb.Src |> build)
-Target.create "BuildMartenStore" (fun _ -> martenStore.Src |> build)
-Target.create "BuildInMemoryStore" (fun _ -> inMemoryStore.Src |> build)
-Target.create "BuildLiteDBStore" (fun _ -> liteDBStore.Src |> build)
-Target.create "BuildServiceStackStore" (fun _ -> serviceStackStore.Src |> build)
-Target.create "BuildAll" (fun _ -> 
-    [
-        "BuildCosmoStore"
-        "BuildTableStorage"
-        "BuildCosmosDb"
-        "BuildMartenStore"
-        "BuildInMemoryStore"
-        "BuildLiteDBStore"
-        "BuildServiceStackStore"
-    ] |> List.iter (Target.runParallel 3)
-)
+Target.create "PackTableStorage" (fun _ -> "src" </> "CosmoStore.TableStorage" |> createNuget)
+Target.create "PublishTableStorage" (fun _ -> "src" </> "CosmoStore.TableStorage" |> publishNuget)
+Target.create "TestTableStorage" (fun _ -> Tools.dotnet "run" ("tests" </> "CosmoStore.TableStorage.Tests"))
 
-// running tests
-Target.create "TestTableStorage" (fun _ -> run "-p tests/CosmoStore.TableStorage.Tests")
-Target.create "TestCosmosDb" (fun _ -> run "-p tests/CosmoStore.CosmosDb.Tests")
-Target.create "TestMartenStore" (fun _ -> run "-p tests/CosmoStore.Marten.Tests")
-Target.create "TestInMemoryStore" (fun _ -> run "-p tests/CosmoStore.InMemory.Tests")
-Target.create "TestLiteDBStore" (fun _ -> run "-p tests/CosmoStore.LiteDB.Tests")
-Target.create "TestServiceStackStore" (fun _ -> run "-p tests/CosmoStore.ServiceStack.Tests")
-Target.create "TestAll" (fun _ -> 
-    [
-        "TestTableStorage"
-        "TestCosmosDb"
-        "TestMartenStore"
-        "TestInMemoryStore"
-        "TestLiteDBStore"
-        "TestServiceStackStore"
-    ] 
-    |> List.iter (Target.runParallel 2)
-)
+"TestTableStorage" ==> "PackTableStorage"
+"TestTableStorage" ==> "PublishTableStorage"
 
-// nugets
-let createNuget (project:Project) =
-    let args = 
-        [
-            sprintf "Title=\"%s\"" project.Package
-            sprintf "Description=\"%s\"" project.Description
-            sprintf "Summary=\"%s\"" project.Description
-            sprintf "PackageVersion=\"%s\"" project.ReleaseNotes.NugetVersion
-            sprintf "PackageReleaseNotes=\"%s\"" (project.ReleaseNotes.Notes |> String.toLines)
-            "PackageLicenseUrl=\"http://github.com/dzoukr/CosmoStore/blob/master/LICENSE.md\""
-            "PackageProjectUrl=\"http://github.com/dzoukr/CosmoStore\"" 
-            "PackageIconUrl=\"\""
-            "PackageIconUrl=\"https://raw.githubusercontent.com/Dzoukr/CosmoStore/master/logo.png\""
-            sprintf "PackageTags=\"%s\"" project.Tags
-            "Copyright=\"Roman Provazník - 2020\""
-        ] 
-        |> List.map (fun x -> "/p:" + x)
-        |> String.concat " "
+Target.create "PackCosmosDb" (fun _ -> "src" </> "CosmoStore.CosmosDb" |> createNuget)
+Target.create "PublishCosmosDb" (fun _ -> "src" </> "CosmoStore.CosmosDb" |> publishNuget)
+Target.create "TestCosmosDb" (fun _ -> Tools.dotnet "run" ("tests" </> "CosmoStore.CosmosDb.Tests"))
 
-    project.Src 
-    |> DotNet.pack (fun p -> { p with Configuration = DotNet.Custom "Release"; OutputPath = Some "../../nuget"; Common = { p.Common with CustomParams = Some args } })
+"TestCosmosDb" ==> "PackCosmosDb"
+"TestCosmosDb" ==> "PublishCosmosDb"
 
-Target.create "NugetCosmoStore" (fun _ -> cosmoStore |> createNuget)
-Target.create "NugetTableStorage" (fun _ -> tableStorage |> createNuget)
-Target.create "NugetCosmosDb" (fun _ -> cosmosDb |> createNuget)
-Target.create "NugetMartenStore" (fun _ -> martenStore |> createNuget)
-Target.create "NugetInMemoryStore" (fun _ -> inMemoryStore |> createNuget)
-Target.create "NugetLiteDBStore" (fun _ -> liteDBStore |> createNuget)
-Target.create "NugetServiceStackStore" (fun _ -> serviceStackStore |> createNuget)
-Target.create "NugetAll" (fun _ -> 
-    [
-        "NugetCosmoStore"
-        "NugetTableStorage"
-        "NugetCosmosDb"
-        "NugetMartenStore"
-        "NugetInMemoryStore"
-        "NugetLiteDBStore"
-        "NugetServiceStackStore"
-    ] |> List.iter (Target.runParallel 0)
-)    
+Target.create "PackMarten" (fun _ -> "src" </> "CosmoStore.Marten" |> createNuget)
+Target.create "PublishMarten" (fun _ -> "src" </> "CosmoStore.Marten" |> publishNuget)
+Target.create "TestMarten" (fun _ -> Tools.dotnet "run" ("tests" </> "CosmoStore.Marten.Tests"))
 
-Fake.Core.Target.create "Clean" (fun _ -> 
-    !! "src/*/bin"
-    ++ "src/*/obj"
-    ++ "tests/*/bin"
-    ++ "tests/*/obj"
-    |> Shell.deleteDirs
-)
+"TestMarten" ==> "PackMarten"
+"TestMarten" ==> "PublishMarten"
 
-"Clean" ==> "TestTableStorage" ==> "NugetTableStorage"
-"Clean" ==> "TestCosmosDb" ==> "NugetCosmosDb"
-"Clean" ==> "TestMartenStore" ==> "NugetMartenStore"
-"Clean" ==> "TestInMemoryStore" ==> "NugetInMemoryStore"
-"Clean" ==> "TestLiteDBStore" ==> "NugetLiteDBStore"
-"Clean" ==> "TestServiceStackStore" ==> "NugetServiceStackStore"
+Target.create "PackInMemory" (fun _ -> "src" </> "CosmoStore.InMemory" |> createNuget)
+Target.create "PublishInMemory" (fun _ -> "src" </> "CosmoStore.InMemory" |> publishNuget)
+Target.create "TestInMemory" (fun _ -> Tools.dotnet "run" ("tests" </> "CosmoStore.InMemory.Tests"))
 
-// start build
-Fake.Core.Target.runOrDefaultWithArguments "BuildAll"
+"TestInMemory" ==> "PackInMemory"
+"TestInMemory" ==> "PublishInMemory"
+
+Target.create "PackLiteDb" (fun _ -> "src" </> "CosmoStore.LiteDb" |> createNuget)
+Target.create "PublishLiteDb" (fun _ -> "src" </> "CosmoStore.LiteDb" |> publishNuget)
+Target.create "TestLiteDb" (fun _ -> Tools.dotnet "run" ("tests" </> "CosmoStore.LiteDb.Tests"))
+
+"TestLiteDb" ==> "PackLiteDb"
+"TestLiteDb" ==> "PublishLiteDb"
+
+Target.create "PackServiceStack" (fun _ -> "src" </> "CosmoStore.ServiceStack" |> createNuget)
+Target.create "PublishServiceStack" (fun _ -> "src" </> "CosmoStore.ServiceStack" |> publishNuget)
+Target.create "TestServiceStack" (fun _ -> Tools.dotnet "run" ("tests" </> "CosmoStore.ServiceStack.Tests"))
+
+"TestServiceStack" ==> "PackServiceStack"
+"TestServiceStack" ==> "PublishServiceStack"
+
+Target.runOrDefaultWithArguments "TestCosmoStore"

@@ -1,3 +1,6 @@
+### 3.0.3 - January 27 2020
+* Fixing package dependencies #40
+
 ### 3.0.2 - January 11 2020
 * Couple of TODO cleared. 
 * Filtering based on Option type is working 

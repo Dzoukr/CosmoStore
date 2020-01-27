@@ -2,7 +2,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>CosmoStore</PackageId>
+    <Description>F# Event Store API definition (for storage provider specific implementations check CosmoStore.* packages)</Description>
+    <RepositoryUrl>https://github.com/Dzoukr/CosmoStore</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/Dzoukr/CosmoStore/blob/master/LICENSE.md</PackageLicenseUrl>
+    <PackageIconUrl>https://github.com/Dzoukr/CosmoStore/raw/master/logo.png</PackageIconUrl>
+    <PackageTags>Event Store</PackageTags>
     <Authors>Roman Provazník</Authors>
+    <Version>3.0.0</Version>
+    <PackageReleaseNotes>API refactored to be more generic - introduced payload and position types (discussed in #27)</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CosmoStore.fs" />

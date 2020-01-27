@@ -3,12 +3,20 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RootNamespace>CosmoStore.LiteDB</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>CosmoStore.LiteDb</PackageId>
+    <Description>F# Event Store for Lite DB</Description>
+    <RepositoryUrl>https://github.com/Dzoukr/CosmoStore</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/Dzoukr/CosmoStore/blob/master/LICENSE.md</PackageLicenseUrl>
+    <PackageIconUrl>https://github.com/Dzoukr/CosmoStore/raw/master/logo.png</PackageIconUrl>
+    <PackageTags>LiteDB Store</PackageTags>
+    <Authors>Roman Provazník;Kunjan Dalal</Authors>
+    <Version>3.0.3</Version>
+    <PackageReleaseNotes>Fixing package dependencies #40</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="LiteDbConf.fs" />
     <Compile Include="EventStore.fs" />
-    <Content Include="paket.references" />
-    <Content Include="RELEASE_NOTES.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CosmoStore\CosmoStore.fsproj" />
