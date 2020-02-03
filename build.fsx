@@ -58,9 +58,6 @@ Target.create "PackCosmoStore" (fun _ -> "src" </> "CosmoStore" |> createNuget)
 Target.create "PublishCosmoStore" (fun _ -> "src" </> "CosmoStore" |> publishNuget)
 Target.create "TestCosmoStore" (fun _ -> Tools.dotnet "run" ("tests" </> "CosmoStore.Tests"))
 
-"TestCosmoStore" ==> "PackCosmoStore"
-"TestCosmoStore" ==> "PublishCosmoStore"
-
 Target.create "PackTableStorage" (fun _ -> "src" </> "CosmoStore.TableStorage" |> createNuget)
 Target.create "PublishTableStorage" (fun _ -> "src" </> "CosmoStore.TableStorage" |> publishNuget)
 Target.create "TestTableStorage" (fun _ -> Tools.dotnet "run" ("tests" </> "CosmoStore.TableStorage.Tests"))

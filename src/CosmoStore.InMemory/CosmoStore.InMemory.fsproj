@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/CosmoStore/raw/master/logo.png</PackageIconUrl>
     <PackageTags>In Memory Store</PackageTags>
     <Authors>Roman Provazník;Kunjan Dalal</Authors>
-    <Version>3.1.1</Version>
-    <PackageReleaseNotes>Fixing package dependencies #40</PackageReleaseNotes>
+    <Version>3.1.2</Version>
+    <PackageReleaseNotes>Fixing problem with version number #41</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CosmoStore\CosmoStore.fsproj" />

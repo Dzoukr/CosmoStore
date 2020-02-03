@@ -1,3 +1,6 @@
+### 3.0.1 - February 03 2020
+Fixing problem with version number #41
+
 ### 3.0.0 - October 14 2019
 * API refactored to be more generic - introduced payload and position types (discussed in #27)
 * Position replaced with Version (discussed in #27)

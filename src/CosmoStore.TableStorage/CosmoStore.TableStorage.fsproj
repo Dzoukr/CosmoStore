@@ -11,8 +11,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/CosmoStore/raw/master/logo.png</PackageIconUrl>
     <PackageTags>Azure TableStorage</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>3.0.0</Version>
-    <PackageReleaseNotes>Following v3 API (discussed in #27)</PackageReleaseNotes>
+    <Version>3.0.1</Version>
+    <PackageReleaseNotes>Fixing problem with version number #41</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TableStorage.fs" />

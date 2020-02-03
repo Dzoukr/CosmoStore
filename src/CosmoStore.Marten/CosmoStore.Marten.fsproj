@@ -12,7 +12,7 @@
     <PackageTags>Marten Postgresql Store</PackageTags>
     <Authors>Roman Provazník;Kunjan Dalal</Authors>
     <Version>3.0.1</Version>
-    <PackageReleaseNotes>JToken support is removed</PackageReleaseNotes>
+    <PackageReleaseNotes>JToken support is removed, Agent is removed,Fixing problem with version number #41</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\paket-files\marten\baronfel\Newtonsoft.Json.FSharp.Idiomatic\src\Newtonsoft.Json.FSharp.Idiomatic\Newtonsoft.Json.FSharp.Idiomatic.fs">

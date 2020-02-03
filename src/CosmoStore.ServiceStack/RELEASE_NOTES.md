@@ -1,3 +1,6 @@
+### 3.0.3 - February 03 2020
+Fixing problem with version number #41
+
 ### 3.0.2 - January 27 2020
 * Fixing package dependencies #40
 

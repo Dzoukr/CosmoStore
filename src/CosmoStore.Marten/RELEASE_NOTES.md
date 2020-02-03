@@ -1,6 +1,7 @@
-### 3.0.1 - January 20 2020
+### 3.0.1 - February 03 2020
 * JToken support is removed
 * Agent is removed
+* Fixing problem with version number #41
 
 ### 3.0.0 - November 18 2019
 * Following v3 API (discussed in #27)

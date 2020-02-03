@@ -1,3 +1,6 @@
+### 3.0.1 - February 03 2020
+Fixing problem with version number #41
+
 ### 3.0.0 - October 14 2019
 * Following v3 API (discussed in #27)
 * Added back compatibility on storage level (discussed in #27)
