@@ -147,6 +147,9 @@ let getEventStore (configuration:Configuration) =
         | Cloud (accountName, authKey) -> 
             let credentials = Auth.StorageCredentials(accountName, authKey)
             CloudStorageAccount(credentials, true)
+        | CloudBySAS (accountName, sasToken) ->
+            let credentials = Auth.StorageCredentials(sasToken)
+            CloudStorageAccount(credentials, accountName, "core.windows.net", true )
         | LocalEmulator -> CloudStorageAccount.DevelopmentStorageAccount
 
     let eventAppended = Event<EventRead<_,_>>()

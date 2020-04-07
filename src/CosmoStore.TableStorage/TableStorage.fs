@@ -4,6 +4,7 @@ open System
 
 type StorageAccount =
     | Cloud of accountName:string * authKey:string
+    | CloudBySAS of accountName:string * sasToken:string
     | LocalEmulator
 
 type Configuration = {
