@@ -244,7 +244,7 @@ type StreamsReadFilter =
 Since version 1.4.0 you can observe appended events by hooking to `EventAppended` property `IObservable<EventRead>`. Use of [FSharp.Control.Reactive](https://www.nuget.org/packages/FSharp.Control.Reactive) library is recommended, but not required.
 
 ## Comparison with Jet's Equinox?
-Coming from Jet's Equinox? Please see amazing comment describing conceptual differences between `Equinox` and `CosmoStore` written by @barterink: https://github.com/Dzoukr/CosmoStore/issues/6#issuecomment-477481777
+Coming from Jet's Equinox? Please see amazing comment describing conceptual differences between `Equinox` and `CosmoStore` written by @bartelink: https://github.com/Dzoukr/CosmoStore/issues/6#issuecomment-477481777
 
 
 ## Known issues (Azure Table Storage only)
