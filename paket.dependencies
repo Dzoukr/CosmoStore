@@ -1,4 +1,4 @@
-version 5.216.0
+version 6.2.1
 
 group Build
     source https://api.nuget.org/v3/index.json
@@ -72,7 +72,6 @@ group Tests
     source https://api.nuget.org/v3/index.json
     storage: none
     nuget Expecto
-    nuget Expecto.VisualStudio.TestAdapter
     nuget FSharp.Control.Reactive
     nuget Newtonsoft.Json !~> 11 lowest_matching: true
     
