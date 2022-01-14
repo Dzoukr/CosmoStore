@@ -1,27 +1,26 @@
 module CosmoStore.TableStorage.EventStore
 
 open System
-open Microsoft.WindowsAzure.Storage
-open Microsoft.WindowsAzure.Storage.Table
+open Azure.Data.Tables
+open Azure.Data.Tables.Models
 open CosmoStore
 open FSharp.Control.Tasks.V2
 open CosmoStore.TableStorage
+open System.Collections.Generic
 open System.Reactive.Linq
 open System.Reactive.Concurrency
 
-let private tryGetStreamMetadata (table:CloudTable) (streamId:string) =
+let private tryGetStreamMetadata (table:TableClient) (streamId:string) =
     task {
-        let operation = TableOperation.Retrieve<DynamicTableEntity>(streamId, Conversion.streamRowKey)
-        let! r = table.ExecuteAsync(operation)
-        match r.Result with
+        let! r = table.GetEntityAsync(streamId, Conversion.streamRowKey)
+        match r.Value with
         | null -> return None
-        | v -> 
-            let entity = v :?> DynamicTableEntity
+        | entity ->
             return (entity, entity |> Conversion.entityToStream) |> Some
     }
 
 
-let private appendEvents (table:CloudTable) (streamId:string) (expectedVersion:ExpectedVersion<_>) (events:EventWrite<_> list) =
+let private appendEvents (table:TableClient) (streamId:string) (expectedVersion:ExpectedVersion<_>) (events:EventWrite<_> list) =
     
     task {
         
@@ -37,7 +36,7 @@ let private appendEvents (table:CloudTable) (streamId:string) (expectedVersion:E
         let nextPos = lastVersion + 1L        
         do Validation.validateVersion streamId nextPos expectedVersion
 
-        let batchOperation = TableBatchOperation()
+        let batchOperation = List<TableTransactionAction>()
 
         let ops = 
             events
@@ -50,25 +49,34 @@ let private appendEvents (table:CloudTable) (streamId:string) (expectedVersion:E
         | Some e ->
             e
             |> Conversion.updateStreamEntity (lastVersion + (int64 events.Length))
-            |> batchOperation.Replace
+            |> fun entity -> TableTransactionAction(TableTransactionActionType.UpsertReplace, entity)
+            |> batchOperation.Add
         | None -> 
             streamId
             |> Conversion.newStreamEntity
             |> Conversion.updateStreamEntity (int64 events.Length)
-            |> batchOperation.Insert
+            |> fun entity -> TableTransactionAction(TableTransactionActionType.Add, entity)
+            |> batchOperation.Add
 
         // insert events in batch
-        ops |> List.iter batchOperation.Insert
+        ops |> Seq.map (fun entity -> TableTransactionAction(TableTransactionActionType.Add, entity)) |> batchOperation.AddRange
         
-        let! results = table.ExecuteBatchAsync(batchOperation)
-        return results 
-        |> Seq.map (fun x -> x.Result :?> DynamicTableEntity)
+        let! response = table.SubmitTransactionAsync(batchOperation)
+        let transactionResult = response.Value :?> TableTransactionResult
+        return
+            ops |> Seq.map (fun entity ->
+                let r = transactionResult.GetResponseForEntity(entity.RowKey)
+                if r.Status <= 299 && r.Status >= 200 then Some entity
+                else None // Maybe we can ignore these since the transaction would have thrown?
+            )
+        |> Seq.choose id
         |> Seq.filter Conversion.isEvent
         |> Seq.map Conversion.entityToEventRead
         |> Seq.toList
         |> List.sortBy (fun x -> x.Version)
     }
 
+(* // rework to linq?
 let rec private executeQuery (table:CloudTable) (query:TableQuery<_>) (token:TableContinuationToken) (values:Collections.Generic.List<_>) =
     task {
         let! res = table.ExecuteQuerySegmentedAsync(query, token)
@@ -77,8 +85,9 @@ let rec private executeQuery (table:CloudTable) (query:TableQuery<_>) (token:Tab
         | null -> return values
         | t -> return! executeQuery table query t values
     }
+*)
 
-let private getStreams (table:CloudTable) (streamsRead:StreamsReadFilter) =
+let private getStreams (table:TableClient) (streamsRead:StreamsReadFilter) =
     let q = Querying.allStreams
     let byReadFilter (s:Stream<_>) =
         match streamsRead with

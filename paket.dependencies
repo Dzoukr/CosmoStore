@@ -1,4 +1,4 @@
-version 5.257.0
+version 6.2.1
 
 group Build
     source https://api.nuget.org/v3/index.json
@@ -13,13 +13,13 @@ group Build
 group CosmoStore
     source https://api.nuget.org/v3/index.json
     storage: none
-    nuget FSharp.Core = 4.3.1
-    nuget System.Reactive !~> 4 lowest_matching: true
+    nuget FSharp.Core = 5.0.0
+    nuget System.Reactive !~> 5 lowest_matching: true
 
 group CosmosDb
     source https://api.nuget.org/v3/index.json
     storage: none
-    nuget FSharp.Core = 4.3.1
+    nuget FSharp.Core = 5.0.0
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
     nuget Microsoft.Azure.Cosmos !~> 3 lowest_matching: true
     nuget Newtonsoft.Json !~> 11 lowest_matching: true
@@ -27,28 +27,28 @@ group CosmosDb
 group TableStorage
     source https://api.nuget.org/v3/index.json
     storage: none
-    nuget FSharp.Core = 4.3.1
+    nuget FSharp.Core = 5.0.0
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
-    nuget WindowsAzure.Storage !~> 9 lowest_matching: true
+    nuget Azure.Data.Tables !~> 12.3 lowest_matching: true
 
 group Marten
     source https://api.nuget.org/v3/index.json
     storage: none
     nuget TaskBuilder.fs
-    nuget FSharp.Core >= 4.3.4 < 4.5.4
+    nuget FSharp.Core = 5.0.0
     nuget Marten.FSharp
     github baronfel/Newtonsoft.Json.FSharp.Idiomatic src/Newtonsoft.Json.FSharp.Idiomatic/Newtonsoft.Json.FSharp.Idiomatic.fs 
     
 group InMemory
     source https://api.nuget.org/v3/index.json
     storage: none
-    nuget FSharp.Core = 4.3.1
+    nuget FSharp.Core = 5.0.0
     nuget TaskBuilder.fs
 
 group LiteDB
     source https://api.nuget.org/v3/index.json
     storage: none
-    nuget FSharp.Core = 4.3.1
+    nuget FSharp.Core = 5.0.0
     nuget TaskBuilder.fs
     nuget LiteDB
     nuget LiteDB.FSharp
@@ -72,7 +72,7 @@ group Tests
     source https://api.nuget.org/v3/index.json
     storage: none
     nuget Expecto
-    nuget Expecto.VisualStudio.TestAdapter
+    // nuget Expecto.VisualStudio.TestAdapter
     nuget FSharp.Control.Reactive
     nuget Newtonsoft.Json !~> 11 lowest_matching: true
     

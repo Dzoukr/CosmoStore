@@ -1,6 +1,6 @@
 module CosmoStore.TableStorage.Querying
 
-open Microsoft.WindowsAzure.Storage.Table
+open Azure.Data.Tables
 open CosmoStore
 
 let private toQuery filter = TableQuery<DynamicTableEntity>().Where(filter)
