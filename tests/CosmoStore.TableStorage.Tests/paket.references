@@ -1,3 +1,2 @@
 group Tests
     Expecto
-    Expecto.VisualStudio.TestAdapter
