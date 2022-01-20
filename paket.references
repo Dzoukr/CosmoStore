@@ -1,0 +1,7 @@
+﻿group Build
+    FSharp.Core
+    Fake.DotNet.Cli
+    Fake.Core.Target
+    Fake.IO.FileSystem
+    Fake.DotNet.Testing.NUnit
+    Fake.Core.ReleaseNotes
