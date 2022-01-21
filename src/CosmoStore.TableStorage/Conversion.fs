@@ -3,7 +3,6 @@ module CosmoStore.TableStorage.Conversion
 open System
 open Azure.Data.Tables
 open CosmoStore
-open System.Collections.Generic
 
 let internal streamRowKey = "Stream"
 
@@ -24,27 +23,27 @@ let updateStreamEntity lastVersion (x:TableEntity) =
 
 let eventWriteToEntity streamId version (x:EventWrite<_>) : TableEntity = 
     let entity = TableEntity(streamId, x.Id.ToString())
-    entity.Add("Version", version |> Nullable)
-    entity.Add("Name", x.Name)
+    entity.Add ("Version", version |> Nullable)
+    entity.Add ("Name", x.Name)
     
     match x.CorrelationId with
-    | Some corrId -> entity.Add("CorrelationId", corrId |> Nullable)
+    | Some corrId -> entity.Add ("CorrelationId", corrId |> Nullable)
     | None -> ()
     
     match x.CausationId with
-    | Some causId -> entity.Add("CausationId", causId |> Nullable)
+    | Some causId -> entity.Add ("CausationId", causId |> Nullable)
     | None -> ()
     
     entity.Add("Data", x.Data |> Serialization.stringFromJToken)
     match x.Metadata with
     | Some meta ->
-        entity.Add("Metadata", meta |> Serialization.stringFromJToken)
+        entity.Add ("Metadata", meta |> Serialization.stringFromJToken)
     | None -> ()
     entity
 
 let isEvent (x:TableEntity) = x.RowKey <> streamRowKey
 
-let newStreamEntity streamId = TableEntity(streamId, "Stream")
+let newStreamEntity streamId = TableEntity (streamId, "Stream")
 
 let entityToEventRead (x:TableEntity) : EventRead<_,_> =
     {
@@ -56,5 +55,5 @@ let entityToEventRead (x:TableEntity) : EventRead<_,_> =
         Name = x.GetString("Name")
         Data = x.GetString("Data") |> Serialization.stringToJToken
         Metadata = x.GetString "Metadata" |> Option.ofObj |> Option.map Serialization.stringToJToken
-        CreatedUtc = x.Timestamp.Value.UtcDateTime
+        CreatedUtc = x.Timestamp.GetValueOrDefault().UtcDateTime
     }

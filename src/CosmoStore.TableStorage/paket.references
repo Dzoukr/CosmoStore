@@ -2,3 +2,6 @@ group TableStorage
     FSharp.Core
     TaskBuilder.fs
     Azure.Data.Tables
+    Newtonsoft.Json
+    File: FilterConverter.fs
+    File: Tables.FSharp.fs

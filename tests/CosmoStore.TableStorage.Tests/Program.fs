@@ -6,18 +6,17 @@ open Expecto
 open Expecto.Logging
 open CosmoStore.Tests
 open CosmoStore.TableStorage
-open Microsoft.WindowsAzure.Storage
+open Azure.Data.Tables
 
 let private v3config = Configuration.CreateDefaultForLocalEmulator() |> fun cfg -> { cfg with TableName = "CosmoStoreTests" }
 let private v2config = { v3config with TableName = "CosmoStoreTestsV2" }
 
 let getEventStore cleanup conf =
-    let account = CloudStorageAccount.DevelopmentStorageAccount
-    let client = account.CreateCloudTableClient()
-    let table = client.GetTableReference(conf.TableName)
     if cleanup then
         try
-            table.DeleteIfExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+            let tableServiceClient =
+                TableServiceClient ("DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1")
+            tableServiceClient.DeleteTable(conf.TableName) |> ignore
         with _ -> ()
     conf |> EventStore.getEventStore
  
