@@ -5354,8 +5354,8 @@ NUGET
       System.ValueTuple (>= 4.3.1) - restriction: || (&& (>= net45) (< net46) (< netstandard1.6)) (&& (< net45) (>= netstandard1.6)) (&& (>= net46) (< netstandard1.6)) (>= net47)
 GITHUB
   remote: Dzoukr/Tables.FSharp
-    src/Tables.FSharp/FilterConverter.fs (cbdebdcb457458eef65ad7706e5449867bfdd318)
-    src/Tables.FSharp/Tables.FSharp.fs (cbdebdcb457458eef65ad7706e5449867bfdd318)
+    src/Tables.FSharp/FilterConverter.fs (1a0f77d4aa63711daead84fb2a2e8b1da007fdd4)
+    src/Tables.FSharp/Tables.FSharp.fs (1a0f77d4aa63711daead84fb2a2e8b1da007fdd4)
 GROUP Tests
 STORAGE: NONE
 NUGET
