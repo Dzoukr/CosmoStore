@@ -3,5 +3,4 @@ group TableStorage
     TaskBuilder.fs
     Azure.Data.Tables
     Newtonsoft.Json
-    File: FilterConverter.fs
-    File: Tables.FSharp.fs
+    Tables.FSharp

@@ -31,8 +31,7 @@ group TableStorage
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
     nuget Azure.Data.Tables !~> 12.3 lowest_matching: true
     nuget Newtonsoft.Json !~> 11 lowest_matching: true
-    github Dzoukr/Tables.FSharp src/Tables.FSharp/FilterConverter.fs
-    github Dzoukr/Tables.FSharp src/Tables.FSharp/Tables.FSharp.fs
+    nuget Tables.FSharp !~> 1.2 lowest_matching: true
 
 group Marten
     source https://api.nuget.org/v3/index.json

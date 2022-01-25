@@ -15,14 +15,6 @@
     <PackageReleaseNotes>Adds support for sovereign clouds on storage tables #52</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\paket-files\tablestorage\Dzoukr\Tables.FSharp\src\Tables.FSharp\Tables.FSharp.fs">
-      <Paket>True</Paket>
-      <Link>paket-files/Tables.FSharp.fs</Link>
-    </Compile>
-    <Compile Include="..\..\paket-files\tablestorage\Dzoukr\Tables.FSharp\src\Tables.FSharp\FilterConverter.fs">
-      <Paket>True</Paket>
-      <Link>paket-files/FilterConverter.fs</Link>
-    </Compile>
     <Compile Include="TableStorage.fs" />
     <Compile Include="Serialization.fs" />
     <Compile Include="Conversion.fs" />
