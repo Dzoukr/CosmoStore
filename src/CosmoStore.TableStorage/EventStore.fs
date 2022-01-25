@@ -165,6 +165,11 @@ let getEventStore (configuration:Configuration) =
                 endpoint = Uri (sprintf "https://%s.table.%s" accountName defaultEndpointSuffix),
                 credential = Azure.AzureSasCredential (sasToken)
             )
+        | CloudByCredential (accountName, credential) ->
+            TableServiceClient(
+                endpoint = Uri (sprintf "https://%s.table.%s" accountName defaultEndpointSuffix),
+                tokenCredential = credential
+            )
         | SovereignCloud (accountName, authKey, endpointSuffix) ->
             TableServiceClient(
                 endpoint = Uri (sprintf "https://%s.table.%s" accountName endpointSuffix),
@@ -174,6 +179,11 @@ let getEventStore (configuration:Configuration) =
             TableServiceClient(
                 endpoint = Uri (sprintf "https://%s.table.%s" accountName endpointSuffix),
                 credential = Azure.AzureSasCredential (sasToken)
+            )
+        | SovereignCloudByCredential (accountName, credential, endpointSuffix) ->
+            TableServiceClient(
+                endpoint = Uri (sprintf "https://%s.table.%s" accountName endpointSuffix),
+                tokenCredential = credential
             )
         | LocalEmulator ->
             TableServiceClient ("DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;")
