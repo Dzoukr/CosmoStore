@@ -1,54 +1,53 @@
 module CosmoStore.TableStorage.Querying
 
-open Microsoft.WindowsAzure.Storage.Table
 open CosmoStore
+open Azure.Data.Tables.FSharp
 
-let private toQuery filter = TableQuery<DynamicTableEntity>().Where(filter)
+let allStreams = Column ("RowKey", Eq Conversion.streamRowKey) |> FilterConverter.toQuery
 
-let allStreams = TableQuery<DynamicTableEntity>().Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, Conversion.streamRowKey))
+let oneStream (streamId:string) =
+    Binary (
+        Column ("PartitionKey", Eq streamId),
+        And,
+        Column ("RowKey", Eq Conversion.streamRowKey)
+    ) |> FilterConverter.toQuery
 
-let oneStream streamId = 
-    TableQuery.CombineFilters(
-        TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, streamId),
-        TableOperators.And,
-        TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, Conversion.streamRowKey)
-    ) |> toQuery
+let allEventsWithCorrelationIdFilter (corrId:System.Guid) =
+    Column ("CorrelationId", Eq corrId)
+    |> FilterConverter.toQuery
 
-let allEventsWithCorrelationIdFilter corrId =
-    TableQuery.GenerateFilterConditionForGuid("CorrelationId", QueryComparisons.Equal, corrId)
-    |> toQuery
-
-let private allEventsFilter streamId =
-    TableQuery.CombineFilters(
-        TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, streamId),
-        TableOperators.And,
-        TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.NotEqual, Conversion.streamRowKey)
+let private allEventsFilter (streamId:string) =
+    Binary (
+        Column ("PartitionKey", Eq streamId),
+        And,
+        Column ("RowKey", Ne Conversion.streamRowKey)
     )
 
-let private versionOrPositionFilter qc ver =
-        TableQuery.CombineFilters(
-            TableQuery.GenerateFilterConditionForLong("Version", qc, ver),
-            TableOperators.Or,
-            TableQuery.GenerateFilterConditionForLong("Position", qc, ver)
-        )
+let private versionOrPositionFilter (qc:ColumnComparison) =
+    Binary(
+        Column ("Version", qc),
+        Or,
+        Column ("Position", qc)
+    )
 
 let private withVersionGreaterOrEqual ver filter =
-    TableQuery.CombineFilters(
+    Binary(
         filter,
-        TableOperators.And,
-        versionOrPositionFilter QueryComparisons.GreaterThanOrEqual ver
+        And,
+        versionOrPositionFilter (Ge ver)
     )
+
 let private withVersionLessOrEqual ver filter =
-    TableQuery.CombineFilters(
+    Binary(
         filter,
-        TableOperators.And,
-        versionOrPositionFilter QueryComparisons.LessThanOrEqual ver
+        And,
+        versionOrPositionFilter (Le ver)
     )
 
 let allEventsFiltered streamId filter =
     let basicFilter = streamId |> allEventsFilter
     match filter with
-    | AllEvents -> basicFilter |> toQuery
-    | FromVersion p -> basicFilter |> withVersionGreaterOrEqual p |> toQuery
-    | ToVersion p -> basicFilter |> withVersionLessOrEqual p |> toQuery
-    | VersionRange(f,t) -> basicFilter |> withVersionGreaterOrEqual f |> withVersionLessOrEqual t |> toQuery
+    | AllEvents -> basicFilter |> FilterConverter.toQuery
+    | FromVersion p -> basicFilter |> withVersionGreaterOrEqual p |> FilterConverter.toQuery
+    | ToVersion p -> basicFilter |> withVersionLessOrEqual p |> FilterConverter.toQuery
+    | VersionRange(f,t) -> basicFilter |> withVersionGreaterOrEqual f |> withVersionLessOrEqual t |> FilterConverter.toQuery

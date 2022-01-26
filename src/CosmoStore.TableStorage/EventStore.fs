@@ -1,30 +1,29 @@
 module CosmoStore.TableStorage.EventStore
 
 open System
-open Microsoft.WindowsAzure.Storage
-open Microsoft.WindowsAzure.Storage.Table
+open Azure.Data.Tables
 open CosmoStore
 open FSharp.Control.Tasks.V2
+open FSharp.Control
 open CosmoStore.TableStorage
+open System.Collections.Generic
 open System.Reactive.Linq
 open System.Reactive.Concurrency
 
-let private tryGetStreamMetadata (table:CloudTable) (streamId:string) =
+let private tryGetStreamMetadata (table:TableClient) (streamId:string) =
     task {
-        let operation = TableOperation.Retrieve<DynamicTableEntity>(streamId, Conversion.streamRowKey)
-        let! r = table.ExecuteAsync(operation)
-        match r.Result with
-        | null -> return None
-        | v -> 
-            let entity = v :?> DynamicTableEntity
-            return (entity, entity |> Conversion.entityToStream) |> Some
+        try
+            let! r = table.GetEntityAsync(streamId, Conversion.streamRowKey)
+            return r.Value
+            |> Option.ofObj
+            |> Option.map
+                (fun entity ->
+                    (entity, entity |> Conversion.entityToStream))
+        with :? Azure.RequestFailedException -> return None
     }
 
-
-let private appendEvents (table:CloudTable) (streamId:string) (expectedVersion:ExpectedVersion<_>) (events:EventWrite<_> list) =
-    
+let private appendEvents (table:TableClient) (streamId:string) (expectedVersion:ExpectedVersion<_>) (events:EventWrite<_> list) =
     task {
-        
         let! lastVersion, metadataEntity = 
             task {
                 let! str = streamId |> tryGetStreamMetadata table
@@ -37,7 +36,7 @@ let private appendEvents (table:CloudTable) (streamId:string) (expectedVersion:E
         let nextPos = lastVersion + 1L        
         do Validation.validateVersion streamId nextPos expectedVersion
 
-        let batchOperation = TableBatchOperation()
+        let batchOperation = List<TableTransactionAction>()
 
         let ops = 
             events
@@ -50,35 +49,50 @@ let private appendEvents (table:CloudTable) (streamId:string) (expectedVersion:E
         | Some e ->
             e
             |> Conversion.updateStreamEntity (lastVersion + (int64 events.Length))
-            |> batchOperation.Replace
+            |> fun entity -> TableTransactionAction(TableTransactionActionType.UpsertReplace, entity)
+            |> batchOperation.Add
         | None -> 
             streamId
             |> Conversion.newStreamEntity
             |> Conversion.updateStreamEntity (int64 events.Length)
-            |> batchOperation.Insert
+            |> fun entity -> TableTransactionAction(TableTransactionActionType.Add, entity)
+            |> batchOperation.Add
 
         // insert events in batch
-        ops |> List.iter batchOperation.Insert
-        
-        let! results = table.ExecuteBatchAsync(batchOperation)
-        return results 
-        |> Seq.map (fun x -> x.Result :?> DynamicTableEntity)
-        |> Seq.filter Conversion.isEvent
-        |> Seq.map Conversion.entityToEventRead
-        |> Seq.toList
-        |> List.sortBy (fun x -> x.Version)
+        ops |> Seq.map (fun entity -> TableTransactionAction(TableTransactionActionType.Add, entity)) |> batchOperation.AddRange
+        try
+            let! _ = table.SubmitTransactionAsync(batchOperation) // Throws on transaction failure.
+            return ops
+            |> Seq.filter Conversion.isEvent
+            |> Seq.map Conversion.entityToEventRead
+            |> Seq.toList
+            |> List.sortBy (fun x -> x.Version)
+        with :? TableTransactionFailedException as ex ->
+            let failureMsg = 
+                if ex.FailedTransactionActionIndex.HasValue then
+                    let failedAction = batchOperation.[ex.FailedTransactionActionIndex.Value]
+                    let failedEntity = failedAction.Entity
+                    sprintf "Transaction failure '%s' for PartitionKey: '%s' and RowKey: '%s'" ex.Message failedEntity.PartitionKey failedEntity.RowKey
+                else
+                    sprintf "Transaction failure '%s'" ex.Message
+            return raise (Exception (failureMsg, ex))
     }
 
-let rec private executeQuery (table:CloudTable) (query:TableQuery<_>) (token:TableContinuationToken) (values:Collections.Generic.List<_>) =
+let private executeQuery (table:TableClient) (query:string) =
     task {
-        let! res = table.ExecuteQuerySegmentedAsync(query, token)
-        do values.AddRange(res.Results)
-        match res.ContinuationToken with
-        | null -> return values
-        | t -> return! executeQuery table query t values
+        let values = List<_> ()
+        let pages = table.QueryAsync(query).AsPages()
+        let mutable pagesLeftToGet = true
+        let e = pages.GetAsyncEnumerator()
+        while pagesLeftToGet do
+            if not(isNull e.Current) then
+                values.AddRange(e.Current.Values)
+            let! morePages = e.MoveNextAsync()
+            pagesLeftToGet <- morePages
+        return values
     }
 
-let private getStreams (table:CloudTable) (streamsRead:StreamsReadFilter) =
+let private getStreams (table:TableClient) (streamsRead:StreamsReadFilter) =
     let q = Querying.allStreams
     let byReadFilter (s:Stream<_>) =
         match streamsRead with
@@ -88,8 +102,7 @@ let private getStreams (table:CloudTable) (streamsRead:StreamsReadFilter) =
         | StreamsReadFilter.StartsWith c -> s.Id.StartsWith(c)
 
     task {
-        let token = TableContinuationToken()
-        let! results = executeQuery table q token (Collections.Generic.List())
+        let! results = executeQuery table q
         return 
             results
             |> Seq.toList
@@ -98,11 +111,10 @@ let private getStreams (table:CloudTable) (streamsRead:StreamsReadFilter) =
             |> List.sortBy (fun x -> x.Id)
     }
 
-let private getStream (table:CloudTable) streamId =
+let private getStream (table:TableClient) streamId =
     let q = Querying.oneStream streamId
     task {
-        let token = TableContinuationToken()
-        let! results = executeQuery table q token (Collections.Generic.List())
+        let! results = executeQuery table q
         return 
             results
             |> Seq.toList
@@ -110,11 +122,10 @@ let private getStream (table:CloudTable) streamId =
             |> List.head
     }
 
-let private getEvents (table:CloudTable) streamId (eventsRead:EventsReadRange<_>) =
+let private getEvents (table:TableClient) streamId (eventsRead:EventsReadRange<_>) =
     let q = Querying.allEventsFiltered streamId eventsRead 
     task {
-        let token = TableContinuationToken()
-        let! results = executeQuery table q token (Collections.Generic.List())
+        let! results = executeQuery table q
         return 
             results
             |> Seq.toList
@@ -122,11 +133,10 @@ let private getEvents (table:CloudTable) streamId (eventsRead:EventsReadRange<_>
             |> List.sortBy (fun x -> x.Version)
     }
 
-let private getEventsByCorrelationId (table:CloudTable) corrId  =
+let private getEventsByCorrelationId (table:TableClient) corrId  =
     let q = Querying.allEventsWithCorrelationIdFilter corrId 
     task {
-        let token = TableContinuationToken()
-        let! results = executeQuery table q token (Collections.Generic.List())
+        let! results = executeQuery table q
         return 
             results
             |> Seq.toList
@@ -134,7 +144,7 @@ let private getEventsByCorrelationId (table:CloudTable) corrId  =
             |> List.sortBy (fun x -> x.CreatedUtc)
     }
 
-let private getEvent (table:CloudTable) streamId version =
+let private getEvent (table:TableClient) streamId version =
     task {
         let filter = EventsReadRange.VersionRange(version, version)
         let! events = getEvents table streamId filter
@@ -142,27 +152,46 @@ let private getEvent (table:CloudTable) streamId version =
     }
 
 let getEventStore (configuration:Configuration) = 
-    let account = 
+    let defaultEndpointSuffix = "core.windows.net"
+    let tableServiceClient = 
         match configuration.Account with
-        | Cloud (accountName, authKey) -> 
-            let credentials = Auth.StorageCredentials(accountName, authKey)
-            CloudStorageAccount(credentials, true)
+        | Cloud (accountName, authKey) ->
+            TableServiceClient(
+                endpoint = Uri (sprintf "https://%s.table.%s" accountName defaultEndpointSuffix),
+                credential = TableSharedKeyCredential (accountName, authKey)
+            )
         | CloudBySAS (accountName, sasToken) ->
-            let credentials = Auth.StorageCredentials(sasToken)
-            CloudStorageAccount(credentials, accountName, "core.windows.net", true )
+            TableServiceClient(
+                endpoint = Uri (sprintf "https://%s.table.%s" accountName defaultEndpointSuffix),
+                credential = Azure.AzureSasCredential (sasToken)
+            )
+        | CloudByCredential (accountName, credential) ->
+            TableServiceClient(
+                endpoint = Uri (sprintf "https://%s.table.%s" accountName defaultEndpointSuffix),
+                tokenCredential = credential
+            )
         | SovereignCloud (accountName, authKey, endpointSuffix) ->
-            let credentials = Auth.StorageCredentials(accountName, authKey)
-            CloudStorageAccount(credentials, accountName, endpointSuffix, true )
+            TableServiceClient(
+                endpoint = Uri (sprintf "https://%s.table.%s" accountName endpointSuffix),
+                credential = TableSharedKeyCredential (accountName, authKey)
+            )
         | SovereignCloudBySAS (accountName, sasToken, endpointSuffix) ->
-            let credentials = Auth.StorageCredentials(sasToken)
-            CloudStorageAccount(credentials, accountName, endpointSuffix, true )
-        | LocalEmulator -> CloudStorageAccount.DevelopmentStorageAccount
+            TableServiceClient(
+                endpoint = Uri (sprintf "https://%s.table.%s" accountName endpointSuffix),
+                credential = Azure.AzureSasCredential (sasToken)
+            )
+        | SovereignCloudByCredential (accountName, credential, endpointSuffix) ->
+            TableServiceClient(
+                endpoint = Uri (sprintf "https://%s.table.%s" accountName endpointSuffix),
+                tokenCredential = credential
+            )
+        | LocalEmulator ->
+            TableServiceClient ("DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;")
 
     let eventAppended = Event<EventRead<_,_>>()
-    let client = account.CreateCloudTableClient()
-    client.GetTableReference(configuration.TableName).CreateIfNotExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
+    tableServiceClient.GetTableClient(configuration.TableName).CreateIfNotExistsAsync() |> Async.AwaitTask |> Async.RunSynchronously |> ignore
     
-    let table = client.GetTableReference(configuration.TableName)
+    let table = tableServiceClient.GetTableClient(configuration.TableName)
     {
         AppendEvent = fun stream pos event -> task {
             let! events = appendEvents table stream pos [event]

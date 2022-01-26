@@ -1,4 +1,6 @@
 group TableStorage
     FSharp.Core
     TaskBuilder.fs
-    WindowsAzure.Storage
+    Azure.Data.Tables
+    Newtonsoft.Json
+    Tables.FSharp

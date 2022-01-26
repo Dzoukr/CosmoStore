@@ -29,7 +29,9 @@ group TableStorage
     storage: none
     nuget FSharp.Core = 4.3.1
     nuget TaskBuilder.fs !~> 2 lowest_matching: true
-    nuget WindowsAzure.Storage !~> 9 lowest_matching: true
+    nuget Azure.Data.Tables !~> 12.3 lowest_matching: true
+    nuget Newtonsoft.Json !~> 11 lowest_matching: true
+    nuget Tables.FSharp !~> 1.2 lowest_matching: true
 
 group Marten
     source https://api.nuget.org/v3/index.json
