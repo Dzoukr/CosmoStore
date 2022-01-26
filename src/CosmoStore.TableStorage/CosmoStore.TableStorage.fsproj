@@ -11,8 +11,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/CosmoStore/raw/master/logo.png</PackageIconUrl>
     <PackageTags>Azure TableStorage</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>3.2.0</Version>
-    <PackageReleaseNotes>Adds support for sovereign clouds on storage tables #52</PackageReleaseNotes>
+    <Version>3.3.0</Version>
+    <PackageReleaseNotes>Migrate WindowsAzure.Storage to Azure.Data.Tables #54</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TableStorage.fs" />
