@@ -18,6 +18,11 @@ let entityToStream (x:TableEntity) = {
 }
 
 let updateStreamEntity lastVersion (x:TableEntity) =
+    // If using the library with data from 2.x, the Stream entity would have "Position" set
+    // so it must be updated here or the `versionOrPosition` function will indicate the Stream
+    // is always on the same value of "Position" and events will continue to be written
+    // at the same version over and over again.
+    if x.ContainsKey "Position" then x.["Position"] <- lastVersion |> Nullable
     x.["Version"] <- lastVersion |> Nullable
     x
 
