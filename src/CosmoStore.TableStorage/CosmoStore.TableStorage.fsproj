@@ -11,8 +11,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/CosmoStore/raw/master/logo.png</PackageIconUrl>
     <PackageTags>Azure TableStorage</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>3.3.0</Version>
-    <PackageReleaseNotes>Migrate WindowsAzure.Storage to Azure.Data.Tables #54</PackageReleaseNotes>
+    <Version>3.3.1</Version>
+    <PackageReleaseNotes>Compatibility fix for TableStorage stream record from 2.x #55</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TableStorage.fs" />
