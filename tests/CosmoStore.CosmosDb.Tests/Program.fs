@@ -25,7 +25,7 @@ let private getEventStore cleanup config =
             |> Async.RunSynchronously 
             |> ignore
         with ex -> ()
-    config |> EventStore.getEventStore
+    config |> EventStore.getEventStoreWithClient client
     
 let testConfig = 
     { Expecto.Tests.defaultConfig with 

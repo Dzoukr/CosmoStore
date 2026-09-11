@@ -84,6 +84,24 @@ let myConfig = CosmosDb.Configuration.CreateDefault cosmosDbUrl cosmosAuthKey
 let eventStore = myConfig |> CosmosDb.EventStore.getEventStore
 ```
 
+You can also inject your already existing CosmosDb client, for example when you use Azure ManagedIdentity:
+
+```fsharp
+open Azure.Identity
+open CosmoStore
+
+let credential = DefaultAzureCredential()
+
+let client =
+    CosmosClient(
+        "https://mycosmosdburl",
+        credential
+    )
+
+let eventStore =
+    myConfig |> EventStore.getEventStoreWithClient client
+```
+
 
 ## Initializing Event store for Azure Table Storage
 
