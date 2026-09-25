@@ -10,8 +10,8 @@
     <PackageIconUrl>https://github.com/Dzoukr/CosmoStore/raw/master/logo.png</PackageIconUrl>
     <PackageTags>Event Store</PackageTags>
     <Authors>Roman Provazník</Authors>
-    <Version>3.0.1</Version>
-    <PackageReleaseNotes>Fixing problem with version number #41</PackageReleaseNotes>
+    <Version>3.1.0</Version>
+    <PackageReleaseNotes>Add function getEventStoreWithClient #57</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="StoredProcedures\AppendEventsV2.js" />
