@@ -202,8 +202,8 @@ let private getStorageVersion (cont:Container) =
         | v -> return failwithf "Invalid uniqueKey '%s'" v
     }
 
-let getEventStore (configuration:Configuration) = 
-    let client = new CosmosClient(configuration.ConnectionString)
+    
+let getEventStoreWithClient (client: CosmosClient) (configuration:Configuration) = 
     let eventAppended = Event<EventRead<JToken,int64>>()
 
     if configuration.InitializeContainer then
@@ -249,3 +249,8 @@ let getEventStore (configuration:Configuration) =
         GetStream = getStream version container configuration.ContainerName
         EventAppended = Observable.ObserveOn(eventAppended.Publish :> IObservable<_>, ThreadPoolScheduler.Instance)
     }
+    
+    
+let getEventStore (configuration:Configuration) =
+    let client = new CosmosClient(configuration.ConnectionString)
+    configuration |> getEventStoreWithClient client
